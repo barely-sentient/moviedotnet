@@ -187,12 +187,27 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Verify release assets
+        shell: bash
+        run: |
+          version="${{ needs.prepare.outputs.version }}"
+          for asset in \
+            "MovieDotNet-${version}-windows-x64.zip" \
+            "MovieDotNet-${version}-linux-x64.tar.gz" \
+            "MovieDotNet-${version}-macos-x64.tar.gz" \
+            "MovieDotNet-${version}-macos-arm64.tar.gz" \
+            "MovieDotNet-${version}-android.apk"; do
+            test -f "artifacts/$asset"
+          done
+          ls -lh artifacts
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           name: MovieDotNet v${{ needs.prepare.outputs.version }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
           body: |
             **MovieDotNet v${{ needs.prepare.outputs.version }}**
 
@@ -206,4 +221,7 @@ jobs:
 
             - [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
             - [FFmpeg](https://ffmpeg.org/download.html) on PATH, or set `MOVIEDOTNET_FFMPEG`.
-          files: artifacts/*
+          files: |
+            artifacts/*.zip
+            artifacts/*.tar.gz
+            artifacts/*.apk
