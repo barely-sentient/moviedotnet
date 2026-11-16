@@ -52,7 +52,8 @@ final render.
 - **Frameless window** — the native frame is hidden (`AppRoot(Frameless = true)`)
   and the app draws its own title bar. Drag the bar to move the window; the
   minimise, maximise/restore and close buttons sit at the right. Rounded desktop
-  corners square off automatically when maximized.
+  corners square off automatically when maximized. The Android host keeps the
+  system frame, and the mobile bar omits these controls.
 - **Projects** — save/open JSON projects (`*.mdproj`) in Documents/MovieDotNet.
 
 ## Requirements

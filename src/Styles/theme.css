@@ -919,6 +919,8 @@ input[type="range"]:hover {
     min-height: 58px;
     padding: 0 12px;
     gap: 10px;
+    /* Android owns the system window chrome; desktop drag regions do not apply. */
+    app-region: none;
 }
 
 .is-mobile .mobile-name {
