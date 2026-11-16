@@ -436,3 +436,115 @@
     font-size: 9.5px;
     color: var(--muted);
 }
+
+/* ------------------------------------------------------------------ record */
+
+.record-block {
+    padding: 0 16px 10px;
+}
+
+.record-preview {
+    position: relative;
+    width: 100%;
+    height: 168px;
+    margin-bottom: 14px;
+    border-radius: 11px;
+    border: 1px solid var(--line);
+    background-color: #05070c;
+    overflow: hidden;
+}
+
+.record-preview-badge {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background-color: rgba(6, 10, 18, 0.72);
+    color: #d4e0ff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.record-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin: 2px 0 16px;
+    padding: 12px;
+    border-radius: 12px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+}
+
+.record-row.is-live {
+    border-color: #5c2734;
+    background-color: #1d1117;
+}
+
+.record-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 50%;
+    background-color: #ff4d6d;
+    color: #ffffff;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(255, 77, 109, 0.3);
+}
+
+.record-button:hover {
+    background-color: #ff6b85;
+}
+
+.record-button.is-live {
+    background-color: #241016;
+    border: 2px solid #ff4d6d;
+    box-shadow: none;
+}
+
+.record-button.is-live i {
+    font-size: 11px;
+    color: #ff8095;
+}
+
+.record-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.record-state {
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.record-time {
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.record-row.is-live .record-state::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background-color: #ff4d6d;
+    animation: pulse-soft 1.2s ease-in-out infinite;
+}

@@ -97,6 +97,10 @@ public static class EditorCommands
                         store.Ui.SelectedAssetId = clip.AssetId;
                     }
                 }
+                else if (uiTest == "record")
+                {
+                    store.Ui.ActiveTab = "record";
+                }
                 else if (uiTest == "text")
                 {
                     var clip = document.Tracks.SelectMany(t => t.Clips).FirstOrDefault(c => c.Kind == TrackKind.Text);
@@ -304,5 +308,239 @@ public static class EditorCommands
         }, "Apply transition");
 
         store.Toast($"{TransitionRegistry.Get(transitionId).Name} applied");
+    }
+
+    // --------------------------------------------------------------- capture
+
+    private static CaptureRecorder? _cameraRecorder;
+    private static CaptureRecorder? _microphoneRecorder;
+    private static bool _devicesRequested;
+
+    public static IReadOnlyList<CaptureDevice> VideoDevices { get; private set; } = [];
+    public static IReadOnlyList<CaptureDevice> AudioDevices { get; private set; } = [];
+    public static bool DevicesLoaded { get; private set; }
+    public static bool CameraRecording => _cameraRecorder?.IsRecording == true;
+    public static bool MicrophoneRecording => _microphoneRecorder?.IsRecording == true;
+    public static bool AnyRecording => CameraRecording || MicrophoneRecording;
+    public static TimeSpan CameraElapsed => _cameraRecorder?.Elapsed ?? TimeSpan.Zero;
+    public static TimeSpan MicrophoneElapsed => _microphoneRecorder?.Elapsed ?? TimeSpan.Zero;
+
+    /// <summary>Loads the capture device list once, then re-renders the tab.</summary>
+    public static void EnsureCaptureDevices(EditorStore store)
+    {
+        if (_devicesRequested)
+        {
+            return;
+        }
+
+        _devicesRequested = true;
+
+        Task.Run(async () =>
+        {
+            var devices = await CaptureRecorder.ListDevicesAsync();
+            Host.Post(() =>
+            {
+                VideoDevices = devices.Where(d => d.IsVideo).ToList();
+                AudioDevices = devices.Where(d => !d.IsVideo).ToList();
+                DevicesLoaded = true;
+
+                if (store.Ui.CameraDevice is null && VideoDevices.Count > 0)
+                {
+                    store.Ui.CameraDevice = VideoDevices[0].Name;
+                }
+
+                if (store.Ui.MicDevice is null && AudioDevices.Count > 0)
+                {
+                    store.Ui.MicDevice = AudioDevices[0].Name;
+                }
+
+                store.Notify();
+
+                // Headless capture smoke test: record the microphone for N seconds.
+                var seconds = Environment.GetEnvironmentVariable("MOVIEDOTNET_RECORD_MIC");
+
+                if (int.TryParse(seconds, out var duration) && duration > 0)
+                {
+                    store.Ui.ActiveTab = "record";
+                    StartMicrophone(store);
+                    _ = StopAfterAsync(store, duration);
+                }
+            });
+        });
+    }
+
+    private static async Task StopAfterAsync(EditorStore store, int seconds)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(seconds));
+
+        if (MicrophoneRecording)
+        {
+            await StopMicrophoneAsync(store);
+        }
+    }
+
+    public static void RefreshCaptureDevices(EditorStore store)
+    {
+        _devicesRequested = false;
+        DevicesLoaded = false;
+        VideoDevices = [];
+        AudioDevices = [];
+        EnsureCaptureDevices(store);
+    }
+
+    public static void StartCamera(EditorStore store)
+    {
+        if (CameraRecording)
+        {
+            return;
+        }
+
+        if (!Ffmpeg.Available)
+        {
+            store.Toast("Install ffmpeg to record.");
+            return;
+        }
+
+        var video = VideoDevices.FirstOrDefault(d => d.Name == store.Ui.CameraDevice) ?? VideoDevices.FirstOrDefault();
+
+        if (video is null)
+        {
+            store.Toast("No camera found.");
+            return;
+        }
+
+        var audio = store.Ui.RecordWithMic
+            ? AudioDevices.FirstOrDefault(d => d.Name == store.Ui.MicDevice) ?? AudioDevices.FirstOrDefault()
+            : null;
+
+        var path = Path.Combine(
+            ProjectFiles.RecordingsDirectory,
+            $"webcam-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
+
+        try
+        {
+            _cameraRecorder = CaptureRecorder.Start(
+                video, audio, store.Ui.CaptureWidth, store.Ui.CaptureHeight, store.Ui.CaptureFps, path);
+
+            store.Toast($"Recording {video.Name}…");
+        }
+        catch (Exception exception)
+        {
+            store.Toast($"Camera failed: {exception.Message}");
+        }
+    }
+
+    public static async Task StopCameraAsync(EditorStore store)
+    {
+        var recorder = _cameraRecorder;
+
+        if (recorder is null)
+        {
+            return;
+        }
+
+        _cameraRecorder = null;
+        store.SetBusy(true, "Finishing webcam recording…", 0);
+
+        var ok = await recorder.StopAsync();
+        recorder.Dispose();
+
+        if (!ok)
+        {
+            Host.Post(() =>
+            {
+                store.SetBusy(false);
+                store.Toast("Camera recording failed — no device frames?");
+            });
+
+            return;
+        }
+
+        await IngestRecordingAsync(store, recorder.OutputPath, "Webcam");
+    }
+
+    public static void StartMicrophone(EditorStore store)
+    {
+        if (MicrophoneRecording)
+        {
+            return;
+        }
+
+        if (!Ffmpeg.Available)
+        {
+            store.Toast("Install ffmpeg to record.");
+            return;
+        }
+
+        var audio = AudioDevices.FirstOrDefault(d => d.Name == store.Ui.MicDevice) ?? AudioDevices.FirstOrDefault();
+
+        if (audio is null)
+        {
+            store.Toast("No microphone found.");
+            return;
+        }
+
+        var path = Path.Combine(
+            ProjectFiles.RecordingsDirectory,
+            $"voice-{DateTime.Now:yyyyMMdd-HHmmss}.m4a");
+
+        try
+        {
+            _microphoneRecorder = CaptureRecorder.Start(null, audio, 0, 0, 0, path);
+            store.Toast($"Recording {audio.Name}…");
+        }
+        catch (Exception exception)
+        {
+            store.Toast($"Microphone failed: {exception.Message}");
+        }
+    }
+
+    public static async Task StopMicrophoneAsync(EditorStore store)
+    {
+        var recorder = _microphoneRecorder;
+
+        if (recorder is null)
+        {
+            return;
+        }
+
+        _microphoneRecorder = null;
+        store.SetBusy(true, "Finishing audio recording…", 0);
+
+        var ok = await recorder.StopAsync();
+        recorder.Dispose();
+
+        if (!ok)
+        {
+            Host.Post(() =>
+            {
+                store.SetBusy(false);
+                store.Toast("Audio recording failed.");
+            });
+
+            return;
+        }
+
+        await IngestRecordingAsync(store, recorder.OutputPath, "Audio");
+    }
+
+    private static async Task IngestRecordingAsync(EditorStore store, string path, string label)
+    {
+        var asset = await MediaAnalysis.AnalyzeAsync(path);
+
+        Host.Post(() =>
+        {
+            store.SetBusy(false);
+
+            if (asset is null)
+            {
+                store.Toast($"{label} saved to {path}");
+                return;
+            }
+
+            store.AddAsset(asset);
+            store.Ui.ActiveTab = "media";
+            store.Toast($"{label} recording added to the bin.");
+        });
     }
 }

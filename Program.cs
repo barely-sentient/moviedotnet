@@ -13,6 +13,7 @@ namespace MovieDotNet;
 public sealed class App : Component
 {
     private static readonly EditorStore Store = EditorStore.CreateNew();
+    private static long _lastCaptureTick;
 
     /// <inheritdoc/>
     public override Node Render()
@@ -51,6 +52,17 @@ public sealed class App : Component
 
                     Store.Ui.Playhead = Math.Max(0, next);
                     Store.SetPlayhead(Store.Ui.Playhead, throttled: true);
+                }
+
+                if (UI.EditorCommands.AnyRecording)
+                {
+                    var now = Environment.TickCount64;
+
+                    if (now - _lastCaptureTick > 300)
+                    {
+                        _lastCaptureTick = now;
+                        Store.Notify();
+                    }
                 }
             }
 
@@ -169,7 +181,8 @@ public sealed class App : Component
             ("audio", "fa-solid fa-music", "Audio"),
             ("transitions", "fa-solid fa-wand-magic-sparkles", "Transitions"),
             ("effects", "fa-solid fa-sliders", "Effects"),
-            ("animations", "fa-solid fa-bolt", "Motion")
+            ("animations", "fa-solid fa-bolt", "Motion"),
+            ("record", "fa-solid fa-video", "Record")
         };
 
         return Div(new() { ClassName = "rail" },

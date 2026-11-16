@@ -30,6 +30,14 @@ public sealed class EditorUi
     public double BusyProgress { get; set; }
     public bool PreviewFullscreen { get; set; }
     public string? Log { get; set; }
+
+    // Capture settings shared by the Record tab.
+    public string? CameraDevice { get; set; }
+    public string? MicDevice { get; set; }
+    public int CaptureWidth { get; set; } = 1280;
+    public int CaptureHeight { get; set; } = 720;
+    public int CaptureFps { get; set; } = 30;
+    public bool RecordWithMic { get; set; } = true;
 }
 
 /// <summary>

@@ -13,6 +13,9 @@ public static class ProjectFiles
     public static string RendersDirectory { get; } = Ensure(
         SafeDocuments(), "Renders");
 
+    public static string RecordingsDirectory { get; } = Ensure(
+        SafeDocuments(), "Recordings");
+
     private static string SafeDocuments()
     {
         try

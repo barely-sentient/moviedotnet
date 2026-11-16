@@ -20,6 +20,8 @@ public sealed class MediaLibrary : Component
     {
         var store = UseContext(EditorContext.Store);
 
+        Effect(() => EditorCommands.EnsureCaptureDevices(store), []);
+
         return Div(new() { ClassName = "library" },
             Div(new() { ClassName = "library-head" },
                 Span(new() { ClassName = "library-title" }, Text(TitleFor(store.Ui.ActiveTab))),
@@ -38,6 +40,7 @@ public sealed class MediaLibrary : Component
                 Show(store.Ui.ActiveTab == "transitions", TransitionsTab(store)),
                 Show(store.Ui.ActiveTab == "effects", EffectsTab(store)),
                 Show(store.Ui.ActiveTab == "animations", AnimationsTab(store)),
+                Show(store.Ui.ActiveTab == "record", RecordTab(store)),
                 Show(store.Ui.ActiveTab == "settings", SettingsTab(store))));
     }
 
@@ -48,6 +51,7 @@ public sealed class MediaLibrary : Component
         "transitions" => "Transitions",
         "effects" => "Effects",
         "animations" => "Motion",
+        "record" => "Record",
         "settings" => "Project setup",
         _ => "Media bin"
     };
@@ -573,5 +577,225 @@ public sealed class MediaLibrary : Component
                         Text("Open"))),
                 Div(new() { ClassName = "settings-note is-dim" },
                     Span(new(), Text(ProjectFiles.ProjectsDirectory))))));
+    }
+
+    // ---------------------------------------------------------------- record
+
+    private static Node RecordTab(EditorStore store)
+    {
+        var ui = store.Ui;
+        var cameras = EditorCommands.VideoDevices;
+        var microphones = EditorCommands.AudioDevices;
+        var hasCamera = cameras.Count > 0;
+        var hasMic = microphones.Count > 0;
+
+        var cameraOptions = cameras.Select(d => new ChoiceOption(d.Name, d.Name)).ToList();
+        var micOptions = new List<ChoiceOption> { new("none", "No microphone") };
+        micOptions.AddRange(microphones.Select(d => new ChoiceOption(d.Name, d.Name)));
+
+        var micChoice = ui.RecordWithMic ? ui.MicDevice ?? "" : "none";
+
+        Node ResolutionChoice() => C<Choice, ChoiceProps>(new ChoiceProps
+        {
+            Value = ui.CaptureWidth switch
+            {
+                1920 => "1080p",
+                854 => "480p",
+                _ => "720p"
+            },
+            Options =
+            [
+                new("480p", "480p"),
+                new("720p", "720p"),
+                new("1080p", "1080p")
+            ],
+            OnSelect = value =>
+            {
+                (ui.CaptureWidth, ui.CaptureHeight) = value switch
+                {
+                    "1080p" => (1920, 1080),
+                    "480p" => (854, 480),
+                    _ => (1280, 720)
+                };
+                store.Notify();
+            }
+        });
+
+        Node FpsChoice() => C<Choice, ChoiceProps>(new ChoiceProps
+        {
+            Value = ui.CaptureFps.ToString(),
+            Options = [new("30", "30 fps"), new("60", "60 fps")],
+            OnSelect = value =>
+            {
+                if (int.TryParse(value, out var fps))
+                {
+                    ui.CaptureFps = fps;
+                    store.Notify();
+                }
+            }
+        });
+
+        return F(
+            Div(new() { ClassName = "panel-note" },
+                H("i", new Props { ClassName = "fa-solid fa-circle-info" }),
+                Span(new(), Text("Recordings are saved to Documents/MovieDotNet/Recordings and added to the media bin."))),
+
+            Section("Webcam", "fa-solid fa-video", cameras.Count),
+            Show(!hasCamera,
+                Div(new() { ClassName = "empty-panel is-compact" },
+                    Span(new() { ClassName = "empty-copy" },
+                        Text(EditorCommands.DevicesLoaded
+                            ? "No camera found. Connect one and refresh."
+                            : "Looking for capture devices…")),
+                    Button(new()
+                    {
+                        ClassName = "btn is-small",
+                        OnClick = () => EditorCommands.RefreshCaptureDevices(store)
+                    },
+                        H("i", new Props { ClassName = "fa-solid fa-rotate" }),
+                        Text("Refresh")))),
+            Show(hasCamera,
+                Div(new() { ClassName = "record-block" },
+                    Div(new() { ClassName = "record-preview" },
+                        Video(new Donkeh.Windowing.VideoProps
+                        {
+                            Src = "dshow://",
+                            Muted = true,
+                            Loop = false,
+                            Attributes = new Dictionary<string, string>
+                            {
+                                ["style"] = "width:100%;height:100%;object-fit:cover;background-color:#05070c;"
+                            }
+                        }),
+                        Div(new() { ClassName = "record-preview-badge" },
+                            Span(new() { ClassName = "dot" }),
+                            Text("Default camera"))),
+                    RecordRow(
+                        EditorCommands.CameraRecording,
+                        EditorCommands.CameraElapsed,
+                        "Start webcam recording",
+                        () =>
+                        {
+                            if (EditorCommands.CameraRecording)
+                            {
+                                EditorCommands.StopCameraAsync(store);
+                            }
+                            else
+                            {
+                                EditorCommands.StartCamera(store);
+                            }
+                        },
+                        true),
+                    Div(new() { ClassName = "field" },
+                        Span(new() { ClassName = "field-label" }, Text("Camera")),
+                        C<Choice, ChoiceProps>(new ChoiceProps
+                        {
+                            Value = ui.CameraDevice ?? "",
+                            Chips = false,
+                            Options = cameraOptions,
+                            OnSelect = value =>
+                            {
+                                ui.CameraDevice = value;
+                                store.Notify();
+                            }
+                        })),
+                    Div(new() { ClassName = "field-grid" },
+                        Div(new() { ClassName = "field" },
+                            Span(new() { ClassName = "field-label" }, Text("Resolution")),
+                            ResolutionChoice()),
+                        Div(new() { ClassName = "field" },
+                            Span(new() { ClassName = "field-label" }, Text("Frame rate")),
+                            FpsChoice())),
+                    Div(new() { ClassName = "field" },
+                        Span(new() { ClassName = "field-label" }, Text("Microphone")),
+                        C<Choice, ChoiceProps>(new ChoiceProps
+                        {
+                            Value = micChoice,
+                            Chips = false,
+                            Options = micOptions,
+                            OnSelect = value =>
+                            {
+                                ui.RecordWithMic = value != "none";
+                                ui.MicDevice = value == "none" ? null : value;
+                                store.Notify();
+                            }
+                        })))),
+
+            Section("Microphone", "fa-solid fa-microphone", microphones.Count),
+            Show(!hasMic,
+                Div(new() { ClassName = "empty-panel is-compact" },
+                    Span(new() { ClassName = "empty-copy" },
+                        Text(EditorCommands.DevicesLoaded
+                            ? "No microphone found. Connect one and refresh."
+                            : "Looking for capture devices…")))),
+            Show(hasMic,
+                Div(new() { ClassName = "record-block" },
+                    Div(new() { ClassName = "field" },
+                        Span(new() { ClassName = "field-label" }, Text("Input")),
+                        C<Choice, ChoiceProps>(new ChoiceProps
+                        {
+                            Value = ui.MicDevice ?? "",
+                            Chips = false,
+                            Options = microphones.Select(d => new ChoiceOption(d.Name, d.Name)).ToList(),
+                            OnSelect = value =>
+                            {
+                                ui.MicDevice = value;
+                                store.Notify();
+                            }
+                        })),
+                    RecordRow(
+                        EditorCommands.MicrophoneRecording,
+                        EditorCommands.MicrophoneElapsed,
+                        "Start audio recording",
+                        () =>
+                        {
+                            if (EditorCommands.MicrophoneRecording)
+                            {
+                                EditorCommands.StopMicrophoneAsync(store);
+                            }
+                            else
+                            {
+                                EditorCommands.StartMicrophone(store);
+                            }
+                        },
+                        false))),
+
+            Div(new() { ClassName = "settings-row" },
+                Button(new()
+                {
+                    ClassName = "btn is-small",
+                    OnClick = () => EditorCommands.RefreshCaptureDevices(store)
+                },
+                    H("i", new Props { ClassName = "fa-solid fa-rotate" }),
+                    Text("Refresh devices"))));
+    }
+
+    private static Node RecordRow(
+        bool recording,
+        TimeSpan elapsed,
+        string idleLabel,
+        Action toggle,
+        bool withVideo)
+    {
+        var clock = $"{(int)elapsed.TotalMinutes:00}:{elapsed.Seconds:00}";
+
+        return Div(new() { ClassName = recording ? "record-row is-live" : "record-row" },
+            Div(new()
+            {
+                ClassName = recording ? "record-button is-live" : "record-button",
+                Title = recording ? "Stop recording" : idleLabel,
+                OnClick = toggle
+            },
+                H("i", new Props
+                {
+                    ClassName = recording ? "fa-solid fa-stop" : "fa-solid fa-circle"
+                })),
+            Div(new() { ClassName = "record-meta" },
+                Span(new() { ClassName = "record-state" },
+                    Text(recording ? "Recording" : "Ready")),
+                Span(new() { ClassName = "record-time" }, Text(clock))),
+            Span(new() { ClassName = "chip" },
+                H("i", new Props { ClassName = withVideo ? "fa-solid fa-film" : "fa-solid fa-music" }),
+                Text(withVideo ? "H.264" : "AAC")));
     }
 }

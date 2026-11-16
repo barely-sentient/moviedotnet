@@ -25,6 +25,9 @@ poster frames, filmstrips, waveforms and the final render.
   vignette; each maps to a CSS filter for preview and a filter for export.
 - **Motion presets** — enter/exit animations for clips and titles, evaluated from
   the playhead so scrubbing shows the real state.
+- **Capture** — a Record tab for webcam and microphone capture through ffmpeg
+  DirectShow: device selection, 480p–1080p at 30/60 fps, live camera preview and
+  automatic ingest into the bin and timeline.
 - **Export** — resolution presets, CRF quality, progress, cancel, ffmpeg log, and
   a filter graph built from the timeline (xfade chain, overlays, drawtext, audio
   mix). A frame snapshot button renders the current frame through the same graph.
@@ -61,6 +64,7 @@ Useful development switches:
 | `MOVIEDOTNET_MOBILE=1` | Force the phone shell on the desktop host. |
 | `MOVIEDOTNET_UITEST=1\|text\|export\|browser\|transitions` | Select a clip / open a panel for screenshot smoke tests. |
 | `MOVIEDOTNET_RENDER=<path>` | Render the demo through the normal export command after loading. |
+| `MOVIEDOTNET_RECORD_MIC=<seconds>` | Record the default microphone for N seconds and ingest it. |
 
 The generated desktop host also supports `--screenshot <path>` (renders 120
 frames, writes a BMP and exits), which is what the smoke tests use.
