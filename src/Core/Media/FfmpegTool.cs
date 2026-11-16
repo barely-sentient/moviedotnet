@@ -274,7 +274,10 @@ public static class Ffmpeg
         try
         {
             process.Start();
-            var json = await process.StandardOutput.ReadToEndAsync(cancellation);
+            var outputTask = process.StandardOutput.ReadToEndAsync(cancellation);
+            var errorTask = process.StandardError.ReadToEndAsync(cancellation);
+            await Task.WhenAll(outputTask, errorTask);
+            var json = await outputTask;
             await process.WaitForExitAsync(cancellation);
 
             if (process.ExitCode != 0)

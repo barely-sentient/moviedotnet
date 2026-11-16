@@ -125,16 +125,14 @@ public sealed class PreviewMonitor : Component
                 Div(new Props() { ClassName = "preview-title" },
                     H("i", new Props() { ClassName = "fa-solid fa-tv" }),
                     Span(new Props(), Text("Program"))),
-                Span(new Props() { ClassName = "chip" }, Text($"{document.Width}×{document.Height}")),
-                Span(new Props() { ClassName = "chip" }, Text($"{document.Fps:0.##} fps")),
-                Span(new Props() { ClassName = "chip is-accent" },
-                    Span(new Props() { ClassName = "dot" }),
-                    Text(document.Tracks.Any(t => t.Clips.Count > 0) ? "Composition live" : "Empty timeline")),
+                Span(new Props() { ClassName = "preview-meta" },
+                    Text($"{document.Width} × {document.Height}  ·  {document.Fps:0.##} fps")),
                 Div(new Props() { ClassName = "spacer" }),
                 C<IconButton, IconButtonProps>(new IconButtonProps
                 {
                     Icon = "fa-solid fa-camera",
                     Tooltip = "Save current frame (ffmpeg)",
+                    Size = "small",
                     Disabled = !Core.Media.Ffmpeg.Available,
                     OnClick = () =>
                     {
@@ -147,6 +145,7 @@ public sealed class PreviewMonitor : Component
                 {
                     Icon = store.Ui.PreviewFullscreen ? "fa-solid fa-compress" : "fa-solid fa-expand",
                     Tooltip = "Fullscreen preview",
+                    Size = "small",
                     OnClick = () =>
                     {
                         store.Ui.PreviewFullscreen = !store.Ui.PreviewFullscreen;
@@ -155,75 +154,78 @@ public sealed class PreviewMonitor : Component
                 })),
 
             Div(new Props() { ClassName = "preview-stage" },
-                Div(new Props() { ClassName = canvasClass, Attributes = new Dictionary<string, string> { ["style"] = canvasStyle } },
-                    Each(Layers(store, playhead), layer => layer),
-                    SelectionOverlay(store, playhead),
-                    mobile
-                        ? null
-                        : Div(new Props()
-                        {
-                            ClassName = "pv-capture",
-                            OnPointerDown = (x, y) => BeginBoxDrag(store, drag, x, y, canvasWidth, canvasHeight),
-                            OnPointerMove = (x, y) => UpdateBoxDrag(store, drag, x, y, canvasWidth, canvasHeight),
-                            OnPointerUp = (x, y) => EndBoxDrag(store, drag)
-                        }))),
-
-            Div(new Props() { ClassName = "transport" },
-                C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-backward-step",
-                    Tooltip = "Go to start",
-                    OnClick = () => store.SetPlayhead(0)
-                }),
-                C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-backward",
-                    Tooltip = "Back one second",
-                    OnClick = () => store.SetPlayhead(playhead - 1)
-                }),
                 Div(new Props()
                 {
-                    ClassName = "play-button",
-                    Title = store.Ui.Playing ? "Pause (space)" : "Play (space)",
-                    OnClick = () =>
-                    {
-                        if (!store.Ui.Playing && playhead >= document.Duration - 0.05)
-                        {
-                            store.SetPlayhead(0);
-                        }
-
-                        store.TogglePlay();
-                    }
+                    ClassName = canvasClass,
+                    Title = "Drag to move · drag an edge or corner to resize",
+                    Attributes = new Dictionary<string, string> { ["style"] = canvasStyle },
+                    OnPointerDown = mobile
+                        ? null
+                        : (x, y) => BeginBoxDrag(store, drag, x, y, canvasWidth, canvasHeight),
+                    OnPointerMove = mobile
+                        ? null
+                        : (x, y) => UpdateBoxDrag(store, drag, x, y, canvasWidth, canvasHeight),
+                    OnPointerUp = mobile
+                        ? null
+                        : (x, y) => EndBoxDrag(store, drag)
                 },
-                    H("i", new Props() { ClassName = store.Ui.Playing ? "fa-solid fa-pause" : "fa-solid fa-play" })),
-                C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-forward",
-                    Tooltip = "Forward one second",
-                    OnClick = () => store.SetPlayhead(playhead + 1)
-                }),
+                    Each(Layers(store, playhead), layer => layer),
+                    SelectionOverlay(store, playhead))),
+
+            Div(new Props() { ClassName = "transport" },
                 Div(new Props() { ClassName = "timecode" },
                     Span(new Props() { ClassName = "timecode-now" }, Text(Format.Timecode(playhead, document.Fps))),
                     Span(new Props() { ClassName = "timecode-sep" }, Text("/")),
                     Span(new Props() { ClassName = "timecode-total" }, Text(Format.Timecode(document.Duration, document.Fps)))),
+
                 Div(new Props() { ClassName = "spacer" }),
-                Button(new Props()
-                {
-                    ClassName = "btn is-small",
-                    OnClick = () => store.AddTextClip("Your text")
-                },
-                    H("i", new Props() { ClassName = "fa-solid fa-font" }),
-                    Text("Text")),
-                Button(new Props()
-                {
-                    ClassName = "btn is-small",
-                    OnClick = () => store.SplitAtPlayhead()
-                },
-                    H("i", new Props() { ClassName = "fa-solid fa-scissors" }),
-                    Text("Split")),
-                Div(new Props() { ClassName = "preview-zoom" },
-                    H("i", new Props() { ClassName = "fa-solid fa-clapperboard" }),
-                    Span(new Props() { ClassName = "value-badge" }, Text(Format.Short(document.Duration))))));
+
+                Div(new Props() { ClassName = "transport-main" },
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-backward-step",
+                        Tooltip = "Go to start",
+                        OnClick = () => store.SetPlayhead(0)
+                    }),
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-backward",
+                        Tooltip = "Back one second",
+                        OnClick = () => store.SetPlayhead(playhead - 1)
+                    }),
+                    Div(new Props()
+                    {
+                        ClassName = "play-button",
+                        Title = store.Ui.Playing ? "Pause (space)" : "Play (space)",
+                        OnClick = () =>
+                        {
+                            if (!store.Ui.Playing && playhead >= document.Duration - 0.05)
+                            {
+                                store.SetPlayhead(0);
+                            }
+
+                            store.TogglePlay();
+                        }
+                    },
+                        H("i", new Props() { ClassName = store.Ui.Playing ? "fa-solid fa-pause" : "fa-solid fa-play" })),
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-forward",
+                        Tooltip = "Forward one second",
+                        OnClick = () => store.SetPlayhead(playhead + 1)
+                    }),
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-forward-step",
+                        Tooltip = "Go to end",
+                        OnClick = () => store.SetPlayhead(document.Duration)
+                    })),
+
+                Div(new Props() { ClassName = "spacer" }),
+
+                Span(new Props() { ClassName = "transport-hint" },
+                    H("i", new Props() { ClassName = "fa-regular fa-keyboard" }),
+                    Span(new Props(), Text("Space to play")))));
     }
 
     private static RenderSettings SettingsFor(EditorStore store) => new()
@@ -240,7 +242,10 @@ public sealed class PreviewMonitor : Component
     {
         var document = store.Document;
         var layers = new List<Node>();
-        var baseTrack = document.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Video);
+
+        // The bottom-most picture track is the base layer; tracks above it are
+        // layers composited on top (matching the export graph).
+        var baseTrack = document.Tracks.LastOrDefault(t => t.Kind is TrackKind.Video or TrackKind.Overlay);
 
         _liveVideos.Clear();
         _liveAudio.Clear();
@@ -287,7 +292,7 @@ public sealed class PreviewMonitor : Component
                 {
                     _liveVideos.Add(clip.Id);
                     var ready = _players.ContainsKey(clip.Id);
-                    var fit = baseTrack == track ? "cover" : "contain";
+                    var fit = "contain";
 
                     // The poster stands in until the decoder publishes its first frame.
                     if (asset.Poster is not null)
@@ -300,7 +305,7 @@ public sealed class PreviewMonitor : Component
                             Alt = clip.Name,
                             Attributes = new Dictionary<string, string>
                             {
-                                ["style"] = style + $"object-fit:{fit};"
+                                ["style"] = style + $"object-fit:{fit};background-color:{document.Background};"
                             }
                         }));
                     }
@@ -310,12 +315,12 @@ public sealed class PreviewMonitor : Component
                         Key = "video-" + clip.Id,
                         ClassName = "pv-media",
                         Src = asset.Path,
-                        Muted = baseTrack != track,
+                        Muted = false,
                         Volume = (float)Math.Clamp(clip.Volume, 0, 1),
                         Loop = false,
                         Attributes = new Dictionary<string, string>
                         {
-                            ["style"] = style + $"object-fit:{fit};opacity:{(ready ? 1 : 0)};"
+                            ["style"] = style + $"object-fit:{fit};background-color:{document.Background};opacity:{(ready ? 1 : 0)};"
                         },
                         OnReady = player =>
                         {
@@ -360,7 +365,7 @@ public sealed class PreviewMonitor : Component
                         Alt = clip.Name,
                         Attributes = new Dictionary<string, string>
                         {
-                            ["style"] = style + $"object-fit:{(baseTrack == track ? "cover" : "contain")};"
+                            ["style"] = style + $"object-fit:contain;background-color:{document.Background};"
                         }
                     }));
                 }
@@ -436,6 +441,7 @@ public sealed class PreviewMonitor : Component
         var translateY = motion.TranslateY;
         var scale = motion.Scale;
         var blur = motion.Blur;
+        var rotation = clip.Rotation + motion.Rotate;
         var clipPath = "";
 
         // Transition preview: the incoming clip reveals itself over the tail of
@@ -523,7 +529,8 @@ public sealed class PreviewMonitor : Component
         {
             return "position:absolute;left:0;top:0;width:100%;height:100%;" +
                    $"opacity:{Motion.Fmt(opacity)};" +
-                   $"transform:translate({Motion.Fmt(translateX)}%,{Motion.Fmt(translateY)}%) scale({Motion.Fmt(scale)});" +
+                   $"transform:translate({Motion.Fmt(translateX)}%,{Motion.Fmt(translateY)}%) " +
+                   $"scale({Motion.Fmt(scale)}) rotate({Motion.Fmt(rotation)}deg);" +
                    (blur > 0.01 ? $"filter:blur({Motion.Fmt(blur)}px);" : "") +
                    (clipPath.Length > 0 ? $"clip-path:{clipPath};" : "");
         }
@@ -541,7 +548,8 @@ public sealed class PreviewMonitor : Component
                $"width:{clip.Box.Width * 100:0.###}%;height:{clip.Box.Height * 100:0.###}%;" +
                fontSize + shadow +
                $"opacity:{Motion.Fmt(opacity)};" +
-               $"transform:translate({Motion.Fmt(translateX)}%,{Motion.Fmt(translateY)}%) scale({Motion.Fmt(scale)}) rotate({Motion.Fmt(motion.Rotate)}deg);" +
+               $"transform:translate({Motion.Fmt(translateX)}%,{Motion.Fmt(translateY)}%) " +
+               $"scale({Motion.Fmt(scale)}) rotate({Motion.Fmt(rotation)}deg);" +
                (blur > 0.01 ? $"filter:blur({Motion.Fmt(blur)}px);" : "") +
                (clipPath.Length > 0 ? $"clip-path:{clipPath};" : "");
     }
@@ -555,8 +563,20 @@ public sealed class PreviewMonitor : Component
             return F();
         }
 
-        string Handle(string corner, string style) =>
-            $"position:absolute;width:9px;height:9px;border-radius:2px;background-color:#ffffff;border:1px solid #2f6bff;{style}";
+        string Handle(string corner, string style)
+        {
+            var cursor = corner is "tl" or "br" ? "nwse-resize" : "nesw-resize";
+            return "position:absolute;width:10px;height:10px;border-radius:2px;" +
+                   "background-color:#ffffff;border:1px solid #97a7ff;pointer-events:auto;" +
+                   $"cursor:{cursor};{style}";
+        }
+
+        // Keep edge handles fully inside the canvas when the clip touches an
+        // edge; otherwise straddle the corner so they read as handles.
+        var left = clip.Box.X <= 0.001 ? "1px" : "-5px";
+        var right = clip.Box.X + clip.Box.Width >= 0.999 ? "1px" : "-5px";
+        var top = clip.Box.Y <= 0.001 ? "1px" : "-5px";
+        var bottom = clip.Box.Y + clip.Box.Height >= 0.999 ? "1px" : "-5px";
 
         Node dot(string corner, string style) => Div(new Props()
         {
@@ -572,13 +592,13 @@ public sealed class PreviewMonitor : Component
                 ["style"] =
                     $"position:absolute;left:{clip.Box.X * 100:0.###}%;top:{clip.Box.Y * 100:0.###}%;" +
                     $"width:{clip.Box.Width * 100:0.###}%;height:{clip.Box.Height * 100:0.###}%;" +
-                    "outline:1.5px solid #3f7cff;pointer-events:none;"
+                    "outline:1.5px solid #97a7ff;pointer-events:none;"
             }
         },
-            dot("tl", "left:-5px;top:-5px;"),
-            dot("tr", "right:-5px;top:-5px;"),
-            dot("bl", "left:-5px;bottom:-5px;"),
-            dot("br", "right:-5px;bottom:-5px;"));
+            dot("tl", $"left:{left};top:{top};"),
+            dot("tr", $"right:{right};top:{top};"),
+            dot("bl", $"left:{left};bottom:{bottom};"),
+            dot("br", $"right:{right};bottom:{bottom};"));
     }
 
     // -------------------------------------------------------------------- drag
@@ -592,16 +612,20 @@ public sealed class PreviewMonitor : Component
         if (clip is not null && clip.Kind != TrackKind.Audio)
         {
             var box = clip.Box;
-            var insideX = nx >= box.X && nx <= box.X + box.Width;
-            var insideY = ny >= box.Y && ny <= box.Y + box.Height;
 
-            if (insideX && insideY)
+            // Include the handle dots: they straddle the edge, so a pointer a
+            // few pixels outside the box still starts a resize.
+            const double edge = 0.05;
+            var nearLeft = Math.Abs(nx - box.X) <= edge;
+            var nearRight = Math.Abs(nx - (box.X + box.Width)) <= edge;
+            var nearTop = Math.Abs(ny - box.Y) <= edge;
+            var nearBottom = Math.Abs(ny - (box.Y + box.Height)) <= edge;
+            var withinX = nx >= box.X - edge && nx <= box.X + box.Width + edge;
+            var withinY = ny >= box.Y - edge && ny <= box.Y + box.Height + edge;
+            var onEdge = (nearLeft || nearRight || nearTop || nearBottom) && withinX && withinY;
+
+            if (onEdge)
             {
-                var nearLeft = Math.Abs(nx - box.X) < 0.035;
-                var nearRight = Math.Abs(nx - (box.X + box.Width)) < 0.035;
-                var nearTop = Math.Abs(ny - box.Y) < 0.035;
-                var nearBottom = Math.Abs(ny - (box.Y + box.Height)) < 0.035;
-
                 store.BeginEdit();
                 var mode = nearBottom && nearRight ? "se"
                     : nearBottom && nearLeft ? "sw"
@@ -610,8 +634,7 @@ public sealed class PreviewMonitor : Component
                     : nearRight ? "e"
                     : nearLeft ? "w"
                     : nearBottom ? "s"
-                    : nearTop ? "n"
-                    : "move";
+                    : "n";
 
                 dragRef.Value = new BoxDrag
                 {
@@ -624,19 +647,59 @@ public sealed class PreviewMonitor : Component
 
                 return;
             }
+
+            var topmost = TopmostClipAt(store, nx, ny);
+            var keepText = clip.Kind == TrackKind.Text && Inside(box, nx, ny);
+
+            // Selecting a layer that sits above the current one takes priority
+            // over dragging the current clip, otherwise an overlay could never
+            // be picked up with the mouse.
+            if (topmost is not null && topmost.Id != clip.Id && !keepText)
+            {
+                store.Select(topmost.Id);
+                return;
+            }
+
+            if (Inside(box, nx, ny))
+            {
+                store.BeginEdit();
+                dragRef.Value = new BoxDrag
+                {
+                    ClipId = clip.Id,
+                    Mode = "move",
+                    StartX = nx,
+                    StartY = ny,
+                    Origin = new LayerBox { X = box.X, Y = box.Y, Width = box.Width, Height = box.Height }
+                };
+
+                return;
+            }
         }
 
         // Nothing selected under the pointer: select the topmost clip there.
-        var hit = store.Document.Tracks
-            .Where(t => !t.Hidden && t.Kind != TrackKind.Audio && t.Kind != TrackKind.Text)
-            .SelectMany(t => t.Clips.Where(c => c.Start <= store.Ui.Playhead && c.End > store.Ui.Playhead))
-            .LastOrDefault(c => nx >= c.Box.X && nx <= c.Box.X + c.Box.Width && ny >= c.Box.Y && ny <= c.Box.Y + c.Box.Height);
+        var selection = TopmostClipAt(store, nx, ny);
 
-        if (hit is not null)
+        if (selection is not null)
         {
-            store.Select(hit.Id);
+            store.Select(selection.Id);
         }
     }
+
+    private static bool Inside(LayerBox box, double nx, double ny) =>
+        nx >= box.X && nx <= box.X + box.Width && ny >= box.Y && ny <= box.Y + box.Height;
+
+    /// <summary>
+    /// Finds the topmost picture clip under a canvas point. Tracks are stored
+    /// top-to-bottom, so the first matching track wins.
+    /// </summary>
+    private static Clip? TopmostClipAt(EditorStore store, double nx, double ny) =>
+        store.Document.Tracks
+            .Where(t => !t.Hidden && t.Kind is TrackKind.Video or TrackKind.Overlay)
+            .Select(t => t.Clips
+                .Where(c => c.Start <= store.Ui.Playhead && c.End > store.Ui.Playhead)
+                .OrderBy(c => c.Start)
+                .LastOrDefault(c => Inside(c.Box, nx, ny)))
+            .FirstOrDefault(c => c is not null);
 
     private static void UpdateBoxDrag(EditorStore store, Ref<BoxDrag?> dragRef, float x, float y, double canvasWidth, double canvasHeight)
     {

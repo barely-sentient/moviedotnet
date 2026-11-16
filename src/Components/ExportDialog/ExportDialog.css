@@ -1,11 +1,11 @@
 .export-modal {
-    width: 640px;
+    width: 660px;
 }
 
 .export-title {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
 }
 
 .export-title i {
@@ -13,13 +13,13 @@
 }
 
 .export-body {
-    gap: 16px;
+    gap: 18px;
 }
 
 .export-grid {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
-    gap: 14px;
+    gap: 16px;
     align-items: start;
 }
 
@@ -35,11 +35,11 @@
 .export-summary {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: 10px 12px;
-    border-radius: 9px;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 13px;
     background-color: var(--card);
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-soft);
 }
 
 .summary-row {
@@ -62,10 +62,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 9px 11px;
-    border-radius: 8px;
-    background-color: #0b0e15;
-    border: 1px solid var(--line);
+    padding: 10px 12px;
+    border-radius: 11px;
+    background-color: var(--bg-soft);
+    border: 1px solid var(--line-soft);
     color: var(--text-dim);
     font-size: 10.5px;
     word-break: break-all;
@@ -78,7 +78,7 @@
 .progress-block {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px;
 }
 
 .progress-head {
@@ -94,26 +94,26 @@
 
 .progress-track {
     height: 8px;
-    border-radius: 6px;
-    background-color: #0b0e15;
-    border: 1px solid var(--line);
+    border-radius: 999px;
+    background-color: var(--bg-soft);
+    border: 1px solid var(--line-soft);
     overflow: hidden;
 }
 
 .progress-fill {
     height: 100%;
-    border-radius: 6px;
-    background-image: linear-gradient(90deg, #4f7dff, #a06bff);
+    border-radius: 999px;
+    background-image: linear-gradient(90deg, #a6b3ff, #c9b9ff);
     transition: width 180ms linear;
 }
 
 .export-log {
     max-height: 150px;
     overflow-y: auto;
-    padding: 10px;
-    border-radius: 8px;
-    background-color: #070a10;
-    border: 1px solid var(--line);
+    padding: 11px;
+    border-radius: 11px;
+    background-color: #080b11;
+    border: 1px solid var(--line-soft);
 }
 
 .export-log-text {

@@ -32,8 +32,6 @@ public sealed class TitleBar : Component
                     Span(new() { ClassName = "brand-name" }, Text("MovieDotNet")),
                     Span(new() { ClassName = "brand-sub" }, Text("Timeline Studio")))),
 
-            Div(new() { ClassName = "divider" }),
-
             Div(new() { ClassName = "project-block" },
                 Input(new()
                 {
@@ -56,43 +54,45 @@ public sealed class TitleBar : Component
             Div(new() { ClassName = "spacer" }),
 
             Div(new() { ClassName = "title-actions" },
-                C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-rotate-left",
-                    Tooltip = "Undo",
-                    Disabled = !store.CanUndo,
-                    OnClick = store.Undo
-                }),
-                C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-rotate-right",
-                    Tooltip = "Redo",
-                    Disabled = !store.CanRedo,
-                    OnClick = store.Redo
-                }),
-                Div(new() { ClassName = "divider" }),
-                C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-folder-open",
-                    Tooltip = "Open project",
-                    OnClick = () =>
+                Div(new() { ClassName = "action-cluster" },
+                    C<IconButton, IconButtonProps>(new IconButtonProps
                     {
-                        store.Ui.BrowserMode = "open";
-                        store.Ui.ShowBrowser = true;
-                        store.Notify();
-                    }
-                }),
-                C<IconButton, IconButtonProps>(new IconButtonProps
+                        Icon = "fa-solid fa-rotate-left",
+                        Tooltip = "Undo",
+                        Disabled = !store.CanUndo,
+                        OnClick = store.Undo
+                    }),
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-rotate-right",
+                        Tooltip = "Redo",
+                        Disabled = !store.CanRedo,
+                        OnClick = store.Redo
+                    }),
+                    Div(new() { ClassName = "cluster-divider" }),
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-folder-open",
+                        Tooltip = "Open project",
+                        OnClick = () =>
+                        {
+                            store.Ui.BrowserMode = "open";
+                            store.Ui.ShowBrowser = true;
+                            store.Notify();
+                        }
+                    }),
+                    C<IconButton, IconButtonProps>(new IconButtonProps
+                    {
+                        Icon = "fa-solid fa-floppy-disk",
+                        Tooltip = "Save project",
+                        OnClick = () => EditorCommands.SaveProject(store)
+                    })),
+                Div(new()
                 {
-                    Icon = "fa-solid fa-floppy-disk",
-                    Tooltip = "Save project",
-                    OnClick = () => EditorCommands.SaveProject(store)
-                }),
-                Div(new() { ClassName = "divider" }),
-                Div(new() { ClassName = "ffmpeg-chip", Title = Ffmpeg.Status },
-                    Span(new() { ClassName = Ffmpeg.Available ? "dot" : "dot is-bad" }),
-                    Span(new(), Text(Ffmpeg.Available ? "ffmpeg ready" : "ffmpeg missing"))),
-                Div(new() { ClassName = "divider" }),
+                    ClassName = "status-dot",
+                    Title = Ffmpeg.Status
+                },
+                    Span(new() { ClassName = Ffmpeg.Available ? "dot" : "dot is-bad" })),
                 C<IconButton, IconButtonProps>(new IconButtonProps
                 {
                     Icon = "fa-solid fa-gear",
@@ -113,7 +113,7 @@ public sealed class TitleBar : Component
                         store.Notify();
                     }
                 },
-                    H("i", new Props { ClassName = "fa-solid fa-film" }),
+                    H("i", new Props { ClassName = "fa-solid fa-arrow-up-from-bracket" }),
                     Text("Render"))));
     }
 

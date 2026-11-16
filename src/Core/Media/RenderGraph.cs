@@ -88,8 +88,11 @@ public static class RenderGraph
 
         var tracks = document.Tracks.Where(t => !t.Hidden).ToList();
         var visualTracks = tracks.Where(t => t.Kind != TrackKind.Audio).ToList();
-        var baseTrack = visualTracks.FirstOrDefault(t => t.Kind == TrackKind.Video);
-        var overlayTracks = visualTracks.Where(t => t != baseTrack).ToList();
+
+        // Tracks are stored top-to-bottom. The bottom-most picture track is the
+        // base layer; everything above it is composited on top, bottom-up.
+        var baseTrack = visualTracks.LastOrDefault(t => t.Kind is TrackKind.Video or TrackKind.Overlay);
+        var overlayTracks = visualTracks.Where(t => t != baseTrack).Reverse().ToList();
         var audioTracks = tracks.Where(t => t.Kind == TrackKind.Audio).ToList();
 
         // Register inputs for every visual clip that reads from a file.
@@ -456,9 +459,31 @@ public static class RenderGraph
 
                 chain.Append("setpts=PTS-STARTPTS,");
                 chain.Append($"fps={F(fps)},");
-                chain.Append($"scale={width}:{height}:force_original_aspect_ratio=increase,");
-                chain.Append($"crop={width}:{height},");
-                chain.Append("setsar=1,format=yuv420p");
+
+                var fullCanvas = clip.Box.X <= 0.001 && clip.Box.Y <= 0.001
+                    && clip.Box.Width >= 0.999 && clip.Box.Height >= 0.999;
+                var boxWidth = Math.Max(8, (int)Math.Round(clip.Box.Width * width));
+                var boxHeight = Math.Max(8, (int)Math.Round(clip.Box.Height * height));
+                var boxX = (int)Math.Round(clip.Box.X * width);
+                var boxY = (int)Math.Round(clip.Box.Y * height);
+
+                if (fullCanvas)
+                {
+                    // Fit the source inside the canvas instead of cropping it.
+                    // Sources with a different aspect ratio are letterboxed
+                    // against the canvas colour so the whole frame stays visible.
+                    chain.Append($"scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,");
+                    chain.Append($"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color={background},");
+                    chain.Append("setsar=1,format=yuv420p");
+                }
+                else
+                {
+                    // The base clip has been moved or resized into a layer: fit it
+                    // inside its transform box, then composite that box on top of
+                    // the canvas background at the requested position.
+                    chain.Append($"scale={boxWidth}:{boxHeight}:force_original_aspect_ratio=decrease:force_divisible_by=2,");
+                    chain.Append("setsar=1,format=rgba");
+                }
 
                 foreach (var effect in clip.Effects)
                 {
@@ -471,8 +496,26 @@ public static class RenderGraph
                     }
                 }
 
-                chain.Append($"[{label}]");
-                filters.Add(chain.ToString());
+                if (fullCanvas)
+                {
+                    chain.Append($"[{label}]");
+                    filters.Add(chain.ToString());
+                }
+                else
+                {
+                    var sourceLabel = $"{label}fit";
+                    var backgroundLabel = $"{label}bg";
+
+                    chain.Append($"[{sourceLabel}]");
+                    filters.Add(chain.ToString());
+                    filters.Add($"color=c={background}:s={width}x{height}:r={F(fps)}:d={F(clip.Duration)},format=yuv420p,setsar=1[{backgroundLabel}]");
+                    filters.Add(
+                        $"[{backgroundLabel}][{sourceLabel}]overlay=" +
+                        $"x='{boxX}+({boxWidth}-overlay_w)/2':" +
+                        $"y='{boxY}+({boxHeight}-overlay_h)/2':" +
+                        $"eof_action=pass:shortest=0,format=yuv420p,setsar=1[{label}]");
+                }
+
                 Append(label, clip.Duration, clip);
             }
             else

@@ -13,21 +13,26 @@ public static class EditorCommands
 {
     public static async Task ImportAsync(EditorStore store, IEnumerable<string> paths)
     {
-        var list = paths.Where(MediaAnalysis.IsSupported).Distinct().ToList();
+        var list = paths
+            .Where(MediaAnalysis.IsSupported)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         if (list.Count == 0)
         {
-            store.Toast("No supported media files selected.");
+            Host.Post(() => store.Toast("No supported media files selected."));
             return;
         }
 
         if (!Ffmpeg.Available)
         {
-            store.Toast("ffmpeg is required to analyse media. Install it and press Refresh.");
+            Host.Post(() => store.Toast("ffmpeg is required to analyse media. Install it and press Refresh."));
             return;
         }
 
-        store.SetBusy(true, $"Importing {list.Count} file(s)…", 0);
+        Host.Post(() => store.SetBusy(true, $"Importing {list.Count} file(s)…", 0));
+        var imported = 0;
+        var failed = new List<string>();
 
         try
         {
@@ -35,26 +40,57 @@ public static class EditorCommands
             {
                 var path = list[i];
                 var progress = (i + 1d) / list.Count;
-                store.SetProgress(progress, $"Analysing {Path.GetFileName(path)}");
+                Host.Post(() => store.SetProgress(progress, $"Analysing {Path.GetFileName(path)}"));
 
-                var asset = await MediaAnalysis.AnalyzeAsync(path);
-
-                if (asset is null)
+                try
                 {
-                    continue;
+                    var asset = await MediaAnalysis.AnalyzeAsync(path);
+
+                    if (asset is null)
+                    {
+                        failed.Add(Path.GetFileName(path));
+                        continue;
+                    }
+
+                    imported++;
+                    Host.Post(() =>
+                    {
+                        store.AddAsset(asset);
+                    });
                 }
-
-                var captured = asset;
-                Host.Post(() =>
+                catch (Exception exception)
                 {
-                    store.AddAsset(captured);
-                    store.Toast($"Added {captured.Name}");
-                });
+                    failed.Add(Path.GetFileName(path));
+                    Host.Post(() => store.Ui.Log = $"{path}: {exception.Message}");
+                }
             }
+        }
+        catch (Exception exception)
+        {
+            Host.Post(() => store.Ui.Log = exception.ToString());
         }
         finally
         {
-            Host.Post(() => store.SetBusy(false));
+            Host.Post(() =>
+            {
+                store.SetBusy(false);
+
+                if (imported > 0)
+                {
+                    store.Ui.ActiveTab = "media";
+                    store.Toast(failed.Count == 0
+                        ? $"Imported {imported} file(s)."
+                        : $"Imported {imported}; failed {failed.Count}: {string.Join(", ", failed.Take(3))}");
+                }
+                else
+                {
+                    store.Toast(failed.Count == 0
+                        ? "No media was imported."
+                        : $"Could not import: {string.Join(", ", failed.Take(3))}. Check ffmpeg and the file.");
+                }
+
+                store.Notify();
+            });
         }
     }
 
@@ -100,6 +136,18 @@ public static class EditorCommands
                 else if (uiTest == "record")
                 {
                     store.Ui.ActiveTab = "record";
+                }
+                else if (uiTest == "settings")
+                {
+                    store.Ui.ActiveTab = "settings";
+                }
+                else if (uiTest == "textpanel")
+                {
+                    store.Ui.ActiveTab = "text";
+                }
+                else if (uiTest == "audio")
+                {
+                    store.Ui.ActiveTab = "audio";
                 }
                 else if (uiTest == "text")
                 {
@@ -315,9 +363,13 @@ public static class EditorCommands
     private static CaptureRecorder? _cameraRecorder;
     private static CaptureRecorder? _microphoneRecorder;
     private static bool _devicesRequested;
+    private static string _cameraLabel = "Capture";
 
     public static IReadOnlyList<CaptureDevice> VideoDevices { get; private set; } = [];
+    public static IReadOnlyList<CaptureDevice> WindowDevices { get; private set; } = [];
+    public static IReadOnlyList<CaptureDevice> ScreenDevices { get; private set; } = [];
     public static IReadOnlyList<CaptureDevice> AudioDevices { get; private set; } = [];
+    public static CaptureDevice? ScreenDevice => ScreenDevices.FirstOrDefault();
     public static bool DevicesLoaded { get; private set; }
     public static bool CameraRecording => _cameraRecorder?.IsRecording == true;
     public static bool MicrophoneRecording => _microphoneRecorder?.IsRecording == true;
@@ -340,7 +392,11 @@ public static class EditorCommands
             var devices = await CaptureRecorder.ListDevicesAsync();
             Host.Post(() =>
             {
-                VideoDevices = devices.Where(d => d.IsVideo).ToList();
+                VideoDevices = devices
+                    .Where(d => d.IsVideo && !d.IsScreen && !d.IsWindow)
+                    .ToList();
+                WindowDevices = devices.Where(d => d.IsWindow).ToList();
+                ScreenDevices = devices.Where(d => d.IsScreen).ToList();
                 AudioDevices = devices.Where(d => !d.IsVideo).ToList();
                 DevicesLoaded = true;
 
@@ -349,9 +405,23 @@ public static class EditorCommands
                     store.Ui.CameraDevice = VideoDevices[0].Name;
                 }
 
+                if (store.Ui.CaptureWindow is null && WindowDevices.Count > 0)
+                {
+                    store.Ui.CaptureWindow = WindowDevices[0].Name;
+                }
+
                 if (store.Ui.MicDevice is null && AudioDevices.Count > 0)
                 {
                     store.Ui.MicDevice = AudioDevices[0].Name;
+                }
+
+                if (store.Ui.CaptureSource == "camera" && VideoDevices.Count == 0)
+                {
+                    store.Ui.CaptureSource = "screen";
+                }
+                else if (store.Ui.CaptureSource == "window" && WindowDevices.Count == 0)
+                {
+                    store.Ui.CaptureSource = "screen";
                 }
 
                 store.Notify();
@@ -364,6 +434,31 @@ public static class EditorCommands
                     store.Ui.ActiveTab = "record";
                     StartMicrophone(store);
                     _ = StopAfterAsync(store, duration);
+                }
+
+                var screenSeconds = Environment.GetEnvironmentVariable("MOVIEDOTNET_RECORD_SCREEN");
+
+                if (int.TryParse(screenSeconds, out var screenDuration) && screenDuration > 0)
+                {
+                    store.Ui.ActiveTab = "record";
+                    store.Ui.CaptureSource = "screen";
+                    store.Ui.RecordWithMic = false;
+                    StartCamera(store);
+                    _ = StopScreenAfterAsync(store, screenDuration);
+                }
+
+                var windowSeconds = Environment.GetEnvironmentVariable("MOVIEDOTNET_RECORD_WINDOW");
+
+                if (int.TryParse(windowSeconds, out var windowDuration) && windowDuration > 0)
+                {
+                    store.Ui.ActiveTab = "record";
+                    store.Ui.CaptureSource = "window";
+                    store.Ui.CaptureWindow = WindowDevices
+                        .FirstOrDefault(d => d.Name.Contains("MovieDotNet", StringComparison.OrdinalIgnoreCase))?.Name
+                        ?? WindowDevices.FirstOrDefault()?.Name;
+                    store.Ui.RecordWithMic = false;
+                    StartCamera(store);
+                    _ = StopScreenAfterAsync(store, windowDuration);
                 }
             });
         });
@@ -379,11 +474,23 @@ public static class EditorCommands
         }
     }
 
+    private static async Task StopScreenAfterAsync(EditorStore store, int seconds)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(seconds));
+
+        if (CameraRecording)
+        {
+            await StopCameraAsync(store);
+        }
+    }
+
     public static void RefreshCaptureDevices(EditorStore store)
     {
         _devicesRequested = false;
         DevicesLoaded = false;
         VideoDevices = [];
+        WindowDevices = [];
+        ScreenDevices = [];
         AudioDevices = [];
         EnsureCaptureDevices(store);
     }
@@ -401,11 +508,25 @@ public static class EditorCommands
             return;
         }
 
-        var video = VideoDevices.FirstOrDefault(d => d.Name == store.Ui.CameraDevice) ?? VideoDevices.FirstOrDefault();
+        var source = store.Ui.CaptureSource;
+        var video = source switch
+        {
+            "screen" => ScreenDevice,
+            "window" => WindowDevices.FirstOrDefault(d => d.Name == store.Ui.CaptureWindow)
+                ?? WindowDevices.FirstOrDefault(),
+            _ => VideoDevices.FirstOrDefault(d => d.Name == store.Ui.CameraDevice)
+                ?? VideoDevices.FirstOrDefault()
+        };
 
         if (video is null)
         {
-            store.Toast("No camera found.");
+            store.Toast(source switch
+            {
+                "window" => "No window selected. Pick a window and refresh.",
+                "camera" => "No camera found.",
+                _ => "Screen capture is not available on this host."
+            });
+
             return;
         }
 
@@ -413,20 +534,36 @@ public static class EditorCommands
             ? AudioDevices.FirstOrDefault(d => d.Name == store.Ui.MicDevice) ?? AudioDevices.FirstOrDefault()
             : null;
 
+        // Captures match the project canvas, exactly like OBS records at the
+        // canvas resolution. The recorder scales/pads the source to this size.
+        var width = Math.Max(2, store.Document.Width);
+        var height = Math.Max(2, store.Document.Height);
+        var fps = Math.Clamp((int)Math.Round(store.Document.Fps), 24, 60);
+        store.Ui.CaptureWidth = width;
+        store.Ui.CaptureHeight = height;
+        store.Ui.CaptureFps = fps;
+
+        var prefix = video.IsScreen ? "screen" : video.IsWindow ? "window" : "webcam";
+        _cameraLabel = video.IsScreen ? "Screen recording" : video.IsWindow ? "Window recording" : "Webcam recording";
         var path = Path.Combine(
             ProjectFiles.RecordingsDirectory,
-            $"webcam-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
+            $"{prefix}-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
 
         try
         {
-            _cameraRecorder = CaptureRecorder.Start(
-                video, audio, store.Ui.CaptureWidth, store.Ui.CaptureHeight, store.Ui.CaptureFps, path);
-
-            store.Toast($"Recording {video.Name}…");
+            var recorder = CaptureRecorder.Start(video, audio, width, height, fps, path);
+            _cameraRecorder = recorder;
+            store.Toast(video.IsScreen
+                ? $"Recording the desktop at {width}×{height}…"
+                : video.IsWindow
+                    ? $"Recording {video.Name} at {width}×{height} — return here to stop."
+                    : $"Recording {video.Name} at {width}×{height}…");
+            store.Notify();
+            _ = WatchCaptureAsync(store, recorder, camera: true);
         }
         catch (Exception exception)
         {
-            store.Toast($"Camera failed: {exception.Message}");
+            store.Toast($"Capture failed: {exception.Message}");
         }
     }
 
@@ -440,7 +577,7 @@ public static class EditorCommands
         }
 
         _cameraRecorder = null;
-        store.SetBusy(true, "Finishing webcam recording…", 0);
+        store.SetBusy(true, "Finishing capture…", 0);
 
         var ok = await recorder.StopAsync();
         recorder.Dispose();
@@ -450,13 +587,13 @@ public static class EditorCommands
             Host.Post(() =>
             {
                 store.SetBusy(false);
-                store.Toast("Camera recording failed — no device frames?");
+                store.Toast("Capture failed — no device frames?");
             });
 
             return;
         }
 
-        await IngestRecordingAsync(store, recorder.OutputPath, "Webcam");
+        await IngestRecordingAsync(store, recorder.OutputPath, _cameraLabel);
     }
 
     public static void StartMicrophone(EditorStore store)
@@ -486,8 +623,11 @@ public static class EditorCommands
 
         try
         {
-            _microphoneRecorder = CaptureRecorder.Start(null, audio, 0, 0, 0, path);
+            var recorder = CaptureRecorder.Start(null, audio, 0, 0, 0, path);
+            _microphoneRecorder = recorder;
             store.Toast($"Recording {audio.Name}…");
+            store.Notify();
+            _ = WatchCaptureAsync(store, recorder, camera: false);
         }
         catch (Exception exception)
         {
@@ -541,6 +681,39 @@ public static class EditorCommands
             store.AddAsset(asset);
             store.Ui.ActiveTab = "media";
             store.Toast($"{label} recording added to the bin.");
+        });
+    }
+
+    private static async Task WatchCaptureAsync(EditorStore store, CaptureRecorder recorder, bool camera)
+    {
+        await recorder.Completion;
+
+        Host.Post(() =>
+        {
+            var current = camera ? _cameraRecorder : _microphoneRecorder;
+
+            // A user stop clears the field before awaiting process shutdown.
+            // Only an unexpected FFmpeg exit should clear state and show an error.
+            if (!ReferenceEquals(current, recorder))
+            {
+                return;
+            }
+
+            if (camera)
+            {
+                _cameraRecorder = null;
+            }
+            else
+            {
+                _microphoneRecorder = null;
+            }
+
+            var log = recorder.Log.Trim();
+            recorder.Dispose();
+            store.Toast(string.IsNullOrEmpty(log)
+                ? "Capture stopped unexpectedly. Check the selected device."
+                : $"Capture failed: {log.Split('\n').LastOrDefault()}");
+            store.Notify();
         });
     }
 }

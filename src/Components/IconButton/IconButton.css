@@ -7,11 +7,12 @@
     height: 30px;
     padding: 0 8px;
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: 9px;
     background-color: transparent;
     color: var(--text-dim);
     font-size: 12px;
     cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
 }
 
 .icon-button:hover {
@@ -21,8 +22,8 @@
 
 .icon-button.is-active {
     background-color: var(--accent-soft);
-    border-color: #3b5395;
-    color: #d7e2ff;
+    border-color: rgba(151, 167, 255, 0.32);
+    color: #dfe5ff;
 }
 
 .btn-label {

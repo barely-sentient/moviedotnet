@@ -16,7 +16,7 @@ namespace MovieDotNet.Components;
 public sealed class Timeline : Component
 {
     private const double DesktopHeaderWidth = 172;
-    private const double MobileHeaderWidth = 108;
+    private const double MobileHeaderWidth = 134;
     private const double RulerHeight = 32;
     private const double TrackGap = 4;
 
@@ -98,25 +98,41 @@ public sealed class Timeline : Component
                                 ["style"] = $"left:{ui.Playhead * ui.Zoom:0.###}px;height:{contentHeight - 8}px;"
                             }
                         }, Div(new() { ClassName = "playhead-cap" })),
+                        Show(ui.DropTrackId is not null,
+                            Div(new()
+                            {
+                                ClassName = "drop-marker",
+                                Key = "drop-marker",
+                                Attributes = new Dictionary<string, string>
+                                {
+                                    ["style"] = $"left:{ui.DropTime * ui.Zoom:0.###}px;height:{contentHeight - 8}px;"
+                                }
+                            })),
                         Div(new()
                         {
                             ClassName = "timeline-capture",
+                            Key = "timeline-capture",
                             Attributes = new Dictionary<string, string>
                             {
                                 ["style"] = $"width:{contentWidth}px;height:{contentHeight}px;"
                             },
                             OnPointerDown = (x, y) => Begin(store, drag, rows, x, y),
                             OnPointerMove = (x, y) => Move(store, drag, rows, x, y),
-                            OnPointerUp = (x, y) => End(store, drag)
+                            OnPointerUp = (x, y) => End(store, drag),
+                            OnDragEnter = evt => UpdateDrop(store, rows, evt),
+                            OnDragOver = evt => UpdateDrop(store, rows, evt),
+                            OnDragLeave = evt => ClearDrop(store),
+                            OnDrop = evt => DropOnTimeline(store, rows, evt)
                         })))));
     }
 
     // ---------------------------------------------------------------- toolbar
 
-    private static Node Toolbar(EditorStore store)
+    private Node Toolbar(EditorStore store)
     {
         var document = store.Document;
         var ui = store.Ui;
+        var (tracksOpen, setTracksOpen) = State(false);
 
         Node Tool(string icon, string tooltip, Action action, bool disabled = false, bool active = false) =>
             C<IconButton, IconButtonProps>(new IconButtonProps
@@ -129,6 +145,34 @@ public sealed class Timeline : Component
                 OnClick = action
             });
 
+        void AddTrack(TrackKind kind, string name, double height, bool atTop)
+        {
+            store.Edit(_ =>
+            {
+                var track = new Track { Kind = kind, Name = name, Height = height };
+
+                if (atTop)
+                {
+                    document.Tracks.Insert(0, track);
+                }
+                else
+                {
+                    document.Tracks.Add(track);
+                }
+            }, "Add track");
+
+            setTracksOpen(false);
+        }
+
+        Node TrackOption(string icon, string label, Action action) =>
+            Div(new()
+            {
+                ClassName = "track-add-item",
+                OnClick = action
+            },
+                H("i", new Props { ClassName = icon }),
+                Span(new(), Text(label)));
+
         return Div(new() { ClassName = "timeline-toolbar" },
             Tool("fa-solid fa-scissors", "Split at playhead", () => store.SplitAtPlayhead()),
             Tool("fa-solid fa-copy", "Duplicate clip", store.DuplicateSelected, store.SelectedClip is null),
@@ -139,50 +183,29 @@ public sealed class Timeline : Component
                 ui.Snap = !ui.Snap;
                 store.Notify();
             }, active: ui.Snap),
-            Div(new() { ClassName = "divider" }),
-            Tool("fa-solid fa-film", "Add video track", () =>
-            {
-                store.Edit(_ => document.Tracks.Add(new Track
-                {
-                    Kind = TrackKind.Video,
-                    Name = $"Video {document.Tracks.Count(t => t.Kind == TrackKind.Video) + 1}",
-                    Height = 62
-                }), "Add track");
-            }),
-            Tool("fa-solid fa-layer-group", "Add overlay track", () =>
-            {
-                store.Edit(_ => document.Tracks.Add(new Track
-                {
-                    Kind = TrackKind.Overlay,
-                    Name = $"Overlay {document.Tracks.Count(t => t.Kind == TrackKind.Overlay) + 1}",
-                    Height = 52
-                }), "Add track");
-            }),
-            Tool("fa-solid fa-font", "Add text track", () =>
-            {
-                store.Edit(_ => document.Tracks.Add(new Track
-                {
-                    Kind = TrackKind.Text,
-                    Name = $"Text {document.Tracks.Count(t => t.Kind == TrackKind.Text) + 1}",
-                    Height = 46
-                }), "Add track");
-            }),
-            Tool("fa-solid fa-music", "Add audio track", () =>
-            {
-                store.Edit(_ => document.Tracks.Add(new Track
-                {
-                    Kind = TrackKind.Audio,
-                    Name = $"Audio {document.Tracks.Count(t => t.Kind == TrackKind.Audio) + 1}",
-                    Height = 46
-                }), "Add track");
-            }),
             Div(new() { ClassName = "spacer" }),
-            Span(new() { ClassName = "chip" },
-                H("i", new Props { ClassName = "fa-solid fa-clock" }),
-                Text(Format.Timecode(ui.Playhead, document.Fps))),
-            Span(new() { ClassName = "chip" },
-                H("i", new Props { ClassName = "fa-solid fa-layer-group" }),
-                Text($"{document.Tracks.Sum(t => t.Clips.Count)} clips")),
+            Div(new() { ClassName = "track-add" },
+                Button(new()
+                {
+                    ClassName = "btn is-small",
+                    OnClick = () => setTracksOpen(!tracksOpen)
+                },
+                    H("i", new Props { ClassName = "fa-solid fa-plus" }),
+                    Text("Track")),
+                Show(tracksOpen,
+                    Div(new() { ClassName = "track-add-menu" },
+                        TrackOption("fa-solid fa-film", "Video track",
+                            () => AddTrack(TrackKind.Video,
+                                $"Video {document.Tracks.Count(t => t.Kind == TrackKind.Video) + 1}", 62, true)),
+                        TrackOption("fa-solid fa-layer-group", "Overlay track",
+                            () => AddTrack(TrackKind.Overlay,
+                                $"Overlay {document.Tracks.Count(t => t.Kind == TrackKind.Overlay) + 1}", 52, true)),
+                        TrackOption("fa-solid fa-font", "Text track",
+                            () => AddTrack(TrackKind.Text,
+                                $"Text {document.Tracks.Count(t => t.Kind == TrackKind.Text) + 1}", 46, true)),
+                        TrackOption("fa-solid fa-music", "Audio track",
+                            () => AddTrack(TrackKind.Audio,
+                                $"Audio {document.Tracks.Count(t => t.Kind == TrackKind.Audio) + 1}", 46, false))))),
             Div(new() { ClassName = "zoom" },
                 H("i", new Props { ClassName = "fa-solid fa-magnifying-glass-minus" }),
                 Input(new()
@@ -214,7 +237,7 @@ public sealed class Timeline : Component
                         store.Notify();
                     }
                 }),
-                Span(new() { ClassName = "value-badge" }, Text($"{ui.Zoom:0}px/s"))));
+                Span(new() { ClassName = "zoom-value" }, Text($"{ui.Zoom:0}px/s"))));
     }
 
     // ------------------------------------------------------------------ ruler
@@ -302,8 +325,7 @@ public sealed class Timeline : Component
                 ["style"] = $"background-color:{color};"
             } }),
             Div(new() { ClassName = "track-head-info" },
-                Span(new() { ClassName = "track-name" }, Text(track.Name)),
-                Span(new() { ClassName = "track-kind" }, Text(track.Kind.ToString()))),
+                Span(new() { ClassName = "track-name" }, Text(track.Name))),
             Div(new() { ClassName = "track-tools" },
                 ToolButton(track.Hidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye", "Show/hide", () =>
                 {
@@ -328,10 +350,18 @@ public sealed class Timeline : Component
         },
             H("i", new Props { ClassName = icon }));
 
-    private static Node Lane(EditorStore store, Track track, double top, double height) =>
-        Div(new()
+    private static Node Lane(EditorStore store, Track track, double top, double height)
+    {
+        var className = track.Locked ? "lane is-locked" : "lane";
+
+        if (store.Ui.DropTrackId == track.Id)
         {
-            ClassName = track.Locked ? "lane is-locked" : "lane",
+            className += " is-drop";
+        }
+
+        return Div(new()
+        {
+            ClassName = className,
             Key = "lane-" + track.Id,
             Attributes = new Dictionary<string, string>
             {
@@ -339,14 +369,149 @@ public sealed class Timeline : Component
                     (track.Hidden ? "opacity:0.45;" : "")
             }
         });
+    }
 
     private static string ColorFor(TrackKind kind) => kind switch
     {
-        TrackKind.Video => "#4f7dff",
-        TrackKind.Overlay => "#a06bff",
-        TrackKind.Text => "#2fd39b",
-        _ => "#ffae4d"
+        TrackKind.Video => "#93a6ff",
+        TrackKind.Overlay => "#c3a6ff",
+        TrackKind.Text => "#8edcc0",
+        _ => "#ecc39a"
     };
+
+    // ------------------------------------------------------------ drag & drop
+
+    /// <summary>Finds the track row under a content-space Y coordinate.</summary>
+    private static Track? TrackAt(List<(Track? Track, double Top, double Height)> rows, double y)
+    {
+        foreach (var row in rows)
+        {
+            if (row.Track is not null && y >= row.Top && y < row.Top + row.Height)
+            {
+                return row.Track;
+            }
+        }
+
+        return rows
+            .Where(row => row.Track is not null)
+            .OrderBy(row => Math.Abs(row.Top + row.Height * 0.5 - y))
+            .Select(row => row.Track)
+            .FirstOrDefault();
+    }
+
+    private static void UpdateDrop(
+        EditorStore store,
+        List<(Track? Track, double Top, double Height)> rows,
+        DragEvent drag)
+    {
+        var track = TrackAt(rows, drag.LocalY);
+
+        if (track is null || track.Locked)
+        {
+            ClearDrop(store);
+            return;
+        }
+
+        var time = Math.Round(Math.Max(0, drag.LocalX / Math.Max(1, store.Ui.Zoom)) * 10) / 10;
+
+        if (store.Ui.DropTrackId != track.Id || Math.Abs(store.Ui.DropTime - time) > 0.04)
+        {
+            store.Ui.DropTrackId = track.Id;
+            store.Ui.DropTime = time;
+            store.Notify();
+        }
+
+        drag.PreventDefault();
+    }
+
+    private static void ClearDrop(EditorStore store)
+    {
+        if (store.Ui.DropTrackId is null && store.Ui.DropTime == 0)
+        {
+            return;
+        }
+
+        store.Ui.DropTrackId = null;
+        store.Ui.DropTime = 0;
+        store.Notify();
+    }
+
+    private static void DropOnTimeline(
+        EditorStore store,
+        List<(Track? Track, double Top, double Height)> rows,
+        DragEvent drag)
+    {
+        var track = TrackAt(rows, drag.LocalY);
+        var time = Math.Round(Math.Max(0, drag.LocalX / Math.Max(1, store.Ui.Zoom)) * 10) / 10;
+
+        if (track is null)
+        {
+            store.Toast("Drop it on a track.");
+            ClearDrop(store);
+            return;
+        }
+
+        if (track.Locked)
+        {
+            store.Toast("That track is locked.");
+            ClearDrop(store);
+            return;
+        }
+
+        var assetId = drag.Data.GetData(DragFormats.Asset);
+        var presetIndex = drag.Data.GetData(DragFormats.TextPreset);
+
+        if (assetId is not null)
+        {
+            var asset = store.Document.FindAsset(assetId);
+
+            if (asset is null)
+            {
+                ClearDrop(store);
+                return;
+            }
+
+            var compatible = asset.Kind switch
+            {
+                AssetKind.Audio => track.Kind == TrackKind.Audio,
+                AssetKind.Image => track.Kind is TrackKind.Video or TrackKind.Overlay,
+                _ => track.Kind is TrackKind.Video or TrackKind.Overlay
+            };
+
+            if (!compatible)
+            {
+                store.Toast(asset.Kind == AssetKind.Audio
+                    ? "Drop audio on an audio track."
+                    : "Drop video and images on a video or overlay track.");
+            }
+            else
+            {
+                var clip = store.AddAssetToTimeline(
+                    asset,
+                    at: time,
+                    asOverlay: track.Kind == TrackKind.Overlay,
+                    target: track);
+                store.Toast($"{asset.Name} added at {Format.Timecode(clip.Start, store.Document.Fps)}");
+            }
+        }
+        else if (presetIndex is not null
+            && int.TryParse(presetIndex, out var index)
+            && index >= 0
+            && index < TextPreset.All.Count)
+        {
+            var clip = TextPreset.All[index].AddTo(
+                store,
+                time,
+                track.Kind == TrackKind.Text ? track : null);
+            store.Toast($"Title added at {Format.Timecode(clip.Start, store.Document.Fps)}");
+        }
+        else
+        {
+            store.Toast("That item cannot be dropped on the timeline.");
+        }
+
+        ClearDrop(store);
+    }
 
     // ------------------------------------------------------------------- clips
 
@@ -521,12 +686,20 @@ public sealed class Timeline : Component
                 clip.Start = Math.Max(0, start);
 
                 var row = rows.FirstOrDefault(r => y >= r.Top && y <= r.Top + r.Height);
+                var target = row.Track;
+                var visualClip = clip.Kind is TrackKind.Video or TrackKind.Overlay;
+                var visualTrack = target is not null
+                    && target.Kind is TrackKind.Video or TrackKind.Overlay;
 
-                if (row.Track is not null && row.Track.Id != clip.TrackId && row.Track.Kind == clip.Kind && !row.Track.Locked)
+                if (target is not null
+                    && target.Id != clip.TrackId
+                    && !target.Locked
+                    && (target.Kind == clip.Kind || (visualClip && visualTrack)))
                 {
                     store.Document.TrackOf(clip)?.Clips.Remove(clip);
-                    clip.TrackId = row.Track.Id;
-                    row.Track.Clips.Add(clip);
+                    clip.TrackId = target.Id;
+                    clip.Kind = target.Kind;
+                    target.Clips.Add(clip);
                 }
 
                 break;

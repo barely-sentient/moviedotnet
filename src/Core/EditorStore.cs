@@ -20,9 +20,11 @@ public sealed class EditorUi
     public bool ShowSettings { get; set; }
     public bool ShowShortcuts { get; set; }
     public string ActiveTab { get; set; } = "media";
+    public string LooksTab { get; set; } = "transitions";
     public string MobilePage { get; set; } = "preview";
     public string BrowserMode { get; set; } = "media";
     public string BrowserPath { get; set; } = "";
+    public int BrowserRefresh { get; set; }
     public string? Toast { get; set; }
     public double ToastUntil { get; set; }
     public bool Busy { get; set; }
@@ -32,12 +34,20 @@ public sealed class EditorUi
     public string? Log { get; set; }
 
     // Capture settings shared by the Record tab.
+    public string CaptureSource { get; set; } = "screen";
     public string? CameraDevice { get; set; }
+    public string? CaptureWindow { get; set; }
     public string? MicDevice { get; set; }
-    public int CaptureWidth { get; set; } = 1280;
-    public int CaptureHeight { get; set; } = 720;
+    public int CaptureWidth { get; set; } = 1920;
+    public int CaptureHeight { get; set; } = 1080;
     public int CaptureFps { get; set; } = 30;
     public bool RecordWithMic { get; set; } = true;
+
+    // HTML-style drag state, used to highlight and place dropped media.
+    public string? DraggingAssetId { get; set; }
+    public int? DraggingTextPreset { get; set; }
+    public string? DropTrackId { get; set; }
+    public double DropTime { get; set; }
 }
 
 /// <summary>
@@ -284,7 +294,6 @@ public sealed class EditorStore
     {
         Ui.SelectedClipId = clipId;
         Ui.SelectedTrackId = clipId is null ? Ui.SelectedTrackId : Document.FindClip(clipId)?.TrackId;
-        Ui.ActiveTab = clipId is null ? Ui.ActiveTab : "clip";
         Notify();
     }
 
@@ -333,17 +342,26 @@ public sealed class EditorStore
         }
     }
 
-    /// <summary>Places an asset at the playhead using the next free slot on its track.</summary>
-    public Clip AddAssetToTimeline(MediaAsset asset, double? at = null)
+    /// <summary>Places an asset at a time, optionally on a specific compatible track.</summary>
+    /// <param name="asset">The asset to place.</param>
+    /// <param name="at">Start time in seconds, or the playhead when omitted.</param>
+    /// <param name="asOverlay">Place a video as a picture-in-picture overlay.</param>
+    /// <param name="target">
+    /// The track a drop landed on. Used when its kind matches the asset; otherwise
+    /// the first track of the required kind is chosen.
+    /// </param>
+    public Clip AddAssetToTimeline(MediaAsset asset, double? at = null, bool asOverlay = false, Track? target = null)
     {
         var kind = asset.Kind switch
         {
             AssetKind.Audio => TrackKind.Audio,
             AssetKind.Image => TrackKind.Overlay,
-            _ => TrackKind.Video
+            _ => asOverlay ? TrackKind.Overlay : TrackKind.Video
         };
 
-        var track = Document.Tracks.FirstOrDefault(t => t.Kind == kind) ?? EnsureTrack(kind);
+        var track = target is not null && target.Kind == kind
+            ? target
+            : Document.Tracks.FirstOrDefault(t => t.Kind == kind) ?? EnsureTrack(kind);
         var duration = asset.Kind == AssetKind.Image ? 5 : Math.Max(0.2, asset.Duration);
         var start = at ?? Ui.Playhead;
 
@@ -351,6 +369,28 @@ public sealed class EditorStore
         while (track.Clips.Any(c => c.Start < start + duration - 0.05 && c.End > start + 0.05))
         {
             start = track.Clips.Where(c => c.End > start).Select(c => c.End).DefaultIfEmpty(start).Max() + 0.1;
+        }
+
+        var box = new LayerBox();
+
+        // Put a video layer straight into a picture-in-picture corner so it can
+        // sit over a screen recording without covering it.
+        if (kind == TrackKind.Overlay && asset.Kind == AssetKind.Video)
+        {
+            const double width = 0.32;
+            var canvasAspect = Document.Width / (double)Math.Max(1, Document.Height);
+            var sourceAspect = asset.Width > 0 && asset.Height > 0
+                ? asset.Width / (double)asset.Height
+                : canvasAspect;
+            var height = Math.Clamp(width * canvasAspect / Math.Max(0.1, sourceAspect), 0.08, 0.9);
+
+            box = new LayerBox
+            {
+                X = Math.Max(0, 1 - width - 0.04),
+                Y = Math.Max(0, 1 - height - 0.04),
+                Width = width,
+                Height = height
+            };
         }
 
         var clip = new Clip
@@ -363,7 +403,7 @@ public sealed class EditorStore
             Duration = duration,
             InPoint = 0,
             Text = asset.Name,
-            Box = new LayerBox()
+            Box = box
         };
 
         Edit(_ => track.Clips.Add(clip), "Add clip");
@@ -373,10 +413,20 @@ public sealed class EditorStore
         return clip;
     }
 
-    public Clip AddTextClip(string text, double? at = null)
+    public Clip AddTextClip(string text, double? at = null, Track? target = null)
     {
-        var track = Document.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Text) ?? EnsureTrack(TrackKind.Text);
+        var track = target is { Kind: TrackKind.Text }
+            ? target
+            : Document.Tracks.FirstOrDefault(t => t.Kind == TrackKind.Text) ?? EnsureTrack(TrackKind.Text);
         var start = at ?? Ui.Playhead;
+        const double duration = 4;
+
+        // Keep dropped or clicked titles from stacking on an existing one.
+        while (track.Clips.Any(c => c.Start < start + duration - 0.05 && c.End > start + 0.05))
+        {
+            start = track.Clips.Where(c => c.End > start).Select(c => c.End).DefaultIfEmpty(start).Max() + 0.1;
+        }
+
         var clip = new Clip
         {
             TrackId = track.Id,
@@ -384,7 +434,7 @@ public sealed class EditorStore
             Name = text.Length > 24 ? text[..24] : text,
             Text = text,
             Start = start,
-            Duration = 4,
+            Duration = duration,
             Box = new LayerBox { X = 0.08, Y = 0.36, Width = 0.84, Height = 0.28 },
             TransitionId = "none"
         };

@@ -81,14 +81,13 @@ public sealed class ExportDialog : Component
                             C<Choice, ChoiceProps>(new ChoiceProps
                             {
                                 Value = preset,
-                                Chips = false,
                                 Options =
                                 [
-                                    new("source", "Source resolution"),
-                                    new("1080p", "1080p · 1920×1080"),
-                                    new("720p", "720p · 1280×720"),
-                                    new("480p", "480p · 854×480"),
-                                    new("vertical", "Vertical · 1080×1920")
+                                    new("source", "Source"),
+                                    new("1080p", "1080p"),
+                                    new("720p", "720p"),
+                                    new("480p", "480p"),
+                                    new("vertical", "Vertical")
                                 ],
                                 OnSelect = setPreset
                             })),

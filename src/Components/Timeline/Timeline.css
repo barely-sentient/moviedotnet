@@ -1,19 +1,21 @@
 .timeline {
+    position: relative;
     display: flex;
     flex-direction: column;
-    height: 334px;
-    min-height: 334px;
+    height: 318px;
+    min-height: 318px;
     background-color: var(--panel);
+    border-top: 1px solid var(--line-soft);
 }
 
 .timeline-toolbar {
     display: flex;
     align-items: center;
-    gap: 5px;
-    height: 46px;
-    min-height: 46px;
+    gap: 4px;
+    height: 48px;
+    min-height: 48px;
     padding: 0 14px;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .timeline-body {
@@ -27,8 +29,8 @@
 .track-heads {
     display: flex;
     flex-direction: column;
-    background-color: #0d1119;
-    border-right: 1px solid var(--line);
+    background-color: #0e1118;
+    border-right: 1px solid var(--line-soft);
     overflow: hidden;
 }
 
@@ -36,30 +38,31 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 0 10px;
+    padding: 0 12px;
     border-bottom: 1px solid var(--line-soft);
 }
 
 .heads-hint {
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.09em;
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #55617a;
+    color: #59657c;
 }
 
 .track-head {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 0 9px 0 0;
-    border-bottom: 1px solid #0a0d14;
+    gap: 6px;
+    padding: 0 8px 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.025);
 }
 
 .track-accent {
     width: 3px;
-    height: 100%;
-    border-radius: 0 2px 2px 0;
+    height: 42%;
+    min-height: 14px;
+    border-radius: 0 3px 3px 0;
     opacity: 0.9;
 }
 
@@ -67,23 +70,17 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
+    flex: 1;
     min-width: 0;
-    padding-left: 2px;
+    padding-left: 8px;
+    overflow: hidden;
 }
 
 .track-name {
     font-size: 11.5px;
     font-weight: 600;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.track-kind {
-    font-size: 9px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #5b6780;
+    color: var(--text-dim);
 }
 
 .track-tools {
@@ -91,16 +88,22 @@
     align-items: center;
     gap: 1px;
     margin-left: auto;
+    opacity: 0.5;
+    transition: opacity 140ms ease;
+}
+
+.track-head:hover .track-tools {
+    opacity: 1;
 }
 
 .track-tool {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 21px;
-    height: 21px;
-    border-radius: 5px;
-    color: #5c6880;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    color: #6b7790;
     font-size: 9px;
     cursor: pointer;
 }
@@ -117,7 +120,7 @@
 .timeline-scroll {
     flex: 1;
     min-width: 0;
-    background-color: #0a0d14;
+    background-color: #0b0e15;
 }
 
 .timeline-content {
@@ -130,8 +133,8 @@
     top: 0;
     height: 32px;
     width: 100%;
-    background-color: #0d1119;
-    border-bottom: 1px solid var(--line);
+    background-color: #0e1118;
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .ruler-track {
@@ -141,25 +144,25 @@
 
 .tick {
     position: absolute;
-    top: 20px;
+    top: 21px;
     width: 1px;
-    height: 6px;
-    background-color: #2a3346;
+    height: 5px;
+    background-color: #283142;
 }
 
 .tick.is-major {
-    top: 16px;
-    height: 10px;
-    background-color: #3b465e;
+    top: 17px;
+    height: 9px;
+    background-color: #3a4559;
 }
 
 .tick-label {
     position: absolute;
     left: 6px;
     top: -16px;
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 600;
-    color: #6d7b96;
+    color: #6f7c94;
     white-space: nowrap;
 }
 
@@ -167,13 +170,27 @@
     position: absolute;
     left: 0;
     width: 100%;
-    background-color: #0e131c;
-    border-radius: 6px;
-    border: 1px solid #121926;
+    background-color: #0e131d;
+    border-radius: 10px;
 }
 
 .lane.is-locked {
     background-image: repeating-linear-gradient(135deg, #0d121a, #0d121a 8px, #101620 8px, #101620 16px);
+}
+
+.lane.is-drop {
+    background-color: rgba(151, 167, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(151, 167, 255, 0.42);
+}
+
+.drop-marker {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    background-color: var(--accent);
+    z-index: 4;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(151, 167, 255, 0.5);
 }
 
 .tl-clip {
@@ -181,44 +198,44 @@
     display: flex;
     align-items: flex-end;
     gap: 6px;
-    border-radius: 6px;
+    border-radius: 9px;
     overflow: hidden;
-    border: 1px solid rgba(120, 150, 220, 0.35);
-    background-color: #1c2a48;
+    border: 1px solid rgba(147, 166, 255, 0.22);
+    background-color: #1a2233;
     cursor: grab;
-    transition: box-shadow 120ms ease;
+    transition: box-shadow 140ms ease, border-color 140ms ease;
 }
 
 .tl-clip:hover {
-    border-color: rgba(160, 190, 255, 0.55);
+    border-color: rgba(175, 190, 255, 0.42);
 }
 
 .tl-clip.is-selected {
-    border-color: #7aa2ff;
-    box-shadow: 0 0 0 1.5px #4f7dff, 0 8px 18px rgba(0, 0, 0, 0.35);
+    border-color: rgba(190, 203, 255, 0.85);
+    box-shadow: 0 0 0 1.5px rgba(151, 167, 255, 0.65), 0 10px 22px rgba(0, 0, 0, 0.3);
 }
 
 .tl-clip.kind-video {
-    background-image: linear-gradient(180deg, rgba(45, 90, 200, 0.35), rgba(22, 34, 66, 0.85));
+    background-image: linear-gradient(180deg, rgba(104, 130, 220, 0.34), rgba(26, 35, 55, 0.92));
 }
 
 .tl-clip.kind-overlay {
-    background-image: linear-gradient(180deg, rgba(126, 84, 220, 0.4), rgba(38, 24, 66, 0.85));
-    border-color: rgba(170, 130, 255, 0.4);
+    background-image: linear-gradient(180deg, rgba(159, 135, 228, 0.36), rgba(36, 30, 58, 0.92));
+    border-color: rgba(190, 172, 255, 0.28);
 }
 
 .tl-clip.kind-text {
-    background-image: linear-gradient(180deg, rgba(32, 170, 130, 0.35), rgba(14, 52, 45, 0.85));
-    border-color: rgba(90, 220, 180, 0.4);
+    background-image: linear-gradient(180deg, rgba(104, 196, 164, 0.3), rgba(20, 48, 43, 0.92));
+    border-color: rgba(142, 220, 192, 0.28);
 }
 
 .tl-clip.kind-audio {
-    background-image: linear-gradient(180deg, rgba(180, 128, 40, 0.4), rgba(66, 44, 12, 0.85));
-    border-color: rgba(255, 180, 80, 0.45);
+    background-image: linear-gradient(180deg, rgba(214, 168, 112, 0.32), rgba(56, 43, 25, 0.92));
+    border-color: rgba(236, 195, 154, 0.3);
 }
 
 .tl-clip.is-locked {
-    opacity: 0.6;
+    opacity: 0.58;
     cursor: default;
 }
 
@@ -229,11 +246,11 @@
     width: 100%;
     height: 100%;
     object-fit: fill;
-    opacity: 0.5;
+    opacity: 0.42;
 }
 
 .tl-clip.kind-audio .tl-clip-media {
-    opacity: 0.75;
+    opacity: 0.6;
 }
 
 .tl-clip-glyph {
@@ -245,7 +262,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.16);
     font-size: 18px;
 }
 
@@ -256,9 +273,9 @@
     gap: 6px;
     width: 100%;
     padding: 5px 8px;
-    background-image: linear-gradient(180deg, rgba(6, 10, 18, 0), rgba(6, 10, 18, 0.78));
-    color: #eef3ff;
-    font-size: 11px;
+    background-image: linear-gradient(180deg, rgba(8, 11, 18, 0), rgba(8, 11, 18, 0.62));
+    color: #eef2ff;
+    font-size: 10.5px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -269,22 +286,20 @@
     flex: none;
     font-size: 9px;
     text-align: center;
-    opacity: 0.85;
+    opacity: 0.75;
 }
 
 .tl-clip-name {
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .tl-clip-time {
     margin-left: auto;
-    font-size: 9px;
-    color: rgba(230, 240, 255, 0.6);
-    background-color: rgba(6, 10, 18, 0.6);
+    font-size: 8.5px;
+    color: rgba(232, 238, 255, 0.6);
+    background-color: rgba(8, 11, 18, 0.55);
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: 999px;
 }
 
 .tl-transition {
@@ -295,12 +310,12 @@
     align-items: center;
     gap: 4px;
     padding: 2px 6px;
-    border-radius: 0 0 6px 0;
-    background-color: rgba(12, 18, 32, 0.85);
-    color: #cfe0ff;
-    font-size: 8.5px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    border-radius: 0 0 8px 0;
+    background-color: rgba(14, 18, 28, 0.82);
+    color: #d4e0ff;
+    font-size: 8px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
@@ -309,29 +324,29 @@
     top: 0;
     width: 5px;
     height: 100%;
-    background-color: #cfe0ff;
-    opacity: 0.85;
+    background-color: #d4deff;
+    opacity: 0.8;
     cursor: ew-resize;
 }
 
 .tl-trim.is-start {
     left: 0;
-    border-radius: 6px 0 0 6px;
+    border-radius: 9px 0 0 9px;
 }
 
 .tl-trim.is-end {
     right: 0;
-    border-radius: 0 6px 6px 0;
+    border-radius: 0 9px 9px 0;
 }
 
 .playhead {
     position: absolute;
     top: 0;
     width: 2px;
-    background-color: #ff4d6d;
+    background-color: #f295a4;
     z-index: 5;
     pointer-events: none;
-    box-shadow: 0 0 12px rgba(255, 77, 109, 0.55);
+    box-shadow: 0 0 12px rgba(242, 149, 164, 0.4);
 }
 
 .playhead-cap {
@@ -340,8 +355,8 @@
     top: 0;
     width: 12px;
     height: 12px;
-    border-radius: 3px;
-    background-color: #ff4d6d;
+    border-radius: 4px;
+    background-color: #f295a4;
 }
 
 .timeline-capture {
@@ -362,5 +377,81 @@
 }
 
 .zoom input {
-    width: 96px;
+    width: 88px;
+}
+
+.zoom-value {
+    min-width: 48px;
+    text-align: right;
+    color: #65718a;
+    font-size: 9.5px;
+}
+
+/* --------------------------------------------------------------- add track */
+
+.track-add {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.track-add-menu {
+    position: absolute;
+    right: 0;
+    top: 36px;
+    z-index: 60;
+    width: 178px;
+    padding: 6px;
+    border-radius: 15px;
+    background-color: var(--panel-2);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+.track-add-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.track-add-item i {
+    width: 15px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: center;
+}
+
+.track-add-item:hover {
+    background-color: var(--card);
+    color: var(--text);
+}
+
+/* ---------------------------------------------------------------- mobile */
+
+.is-mobile .track-head {
+    gap: 4px;
+    padding-right: 4px;
+}
+
+.is-mobile .track-head-info {
+    padding-left: 5px;
+}
+
+.is-mobile .track-name {
+    font-size: 11px;
+}
+
+.is-mobile .track-tools {
+    gap: 0;
+}
+
+.is-mobile .track-tool {
+    width: 18px;
+    height: 20px;
 }

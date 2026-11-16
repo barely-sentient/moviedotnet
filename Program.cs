@@ -14,6 +14,7 @@ public sealed class App : Component
 {
     private static readonly EditorStore Store = EditorStore.CreateNew();
     private static long _lastCaptureTick;
+    private static bool _wasRecording;
 
     /// <inheritdoc/>
     public override Node Render()
@@ -33,7 +34,9 @@ public sealed class App : Component
         {
             void Tick(double delta)
             {
-                if (Store.Ui.Toast is not null && Environment.TickCount64 > Store.Ui.ToastUntil)
+                var now = Environment.TickCount64;
+
+                if (Store.Ui.Toast is not null && now > Store.Ui.ToastUntil)
                 {
                     Store.Ui.Toast = null;
                     Store.RaiseChanged();
@@ -54,16 +57,19 @@ public sealed class App : Component
                     Store.SetPlayhead(Store.Ui.Playhead, throttled: true);
                 }
 
-                if (UI.EditorCommands.AnyRecording)
-                {
-                    var now = Environment.TickCount64;
+                var recording = UI.EditorCommands.AnyRecording;
 
-                    if (now - _lastCaptureTick > 300)
-                    {
-                        _lastCaptureTick = now;
-                        Store.Notify();
-                    }
+                if (recording && now - _lastCaptureTick >= 1000)
+                {
+                    _lastCaptureTick = now;
+                    Store.Notify();
                 }
+                else if (_wasRecording && !recording)
+                {
+                    Store.Notify();
+                }
+
+                _wasRecording = recording;
             }
 
             Host.FrameTick += Tick;
@@ -85,6 +91,32 @@ public sealed class App : Component
             if (!string.IsNullOrWhiteSpace(projectPath) && File.Exists(projectPath))
             {
                 UI.EditorCommands.OpenProject(Store, projectPath);
+
+                // Diagnostic hook: render an opened project through the normal
+                // export path (used for headless layout/composition checks).
+                var projectRender = Environment.GetEnvironmentVariable("MOVIEDOTNET_RENDER");
+
+                if (!string.IsNullOrWhiteSpace(projectRender))
+                {
+                    var document = Store.Document;
+                    UI.EditorCommands.RenderAsync(Store, new MovieDotNet.Core.Media.RenderSettings
+                    {
+                        Width = document.Width,
+                        Height = document.Height,
+                        Fps = document.Fps,
+                        Crf = 24,
+                        Background = document.Background
+                    }, projectRender);
+                }
+
+                return;
+            }
+
+            if (Environment.GetEnvironmentVariable("MOVIEDOTNET_IMPORT_FILE") is { Length: > 0 } importPath)
+            {
+                UI.EditorCommands.ImportAsync(Store, importPath.Split(
+                    Path.PathSeparator,
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
                 return;
             }
 
@@ -174,41 +206,37 @@ public sealed class App : Component
 
     private static Node Rail()
     {
+        // Five destinations instead of eight. Transitions, effects and motion
+        // live together under Looks, and project setup stays in the title bar.
         var tabs = new (string Id, string Icon, string Label)[]
         {
             ("media", "fa-solid fa-photo-film", "Media"),
             ("text", "fa-solid fa-font", "Text"),
             ("audio", "fa-solid fa-music", "Audio"),
-            ("transitions", "fa-solid fa-wand-magic-sparkles", "Transitions"),
-            ("effects", "fa-solid fa-sliders", "Effects"),
-            ("animations", "fa-solid fa-bolt", "Motion"),
-            ("record", "fa-solid fa-video", "Record")
+            ("record", "fa-solid fa-video", "Record"),
+            ("looks", "fa-solid fa-wand-magic-sparkles", "Looks")
         };
 
+        var current = Store.Ui.ActiveTab;
+
         return Div(new() { ClassName = "rail" },
-            Each(tabs, tab => Div(new()
+            Each(tabs, tab =>
             {
-                ClassName = Store.Ui.ActiveTab == tab.Id ? "rail-item is-active" : "rail-item",
-                OnClick = () =>
+                var active = current == tab.Id
+                    || (tab.Id == "looks" && current is "transitions" or "effects" or "animations");
+
+                return Div(new()
                 {
-                    Store.Ui.ActiveTab = tab.Id;
-                    Store.RaiseChanged();
-                }
-            },
-                H("i", new Props { ClassName = tab.Icon }),
-                Span(new() { ClassName = "rail-label" }, Text(tab.Label)))),
-            Div(new() { ClassName = "spacer" }),
-            Div(new()
-            {
-                ClassName = Store.Ui.ShowSettings ? "rail-item is-active" : "rail-item",
-                OnClick = () =>
-                {
-                    Store.Ui.ActiveTab = "settings";
-                    Store.Ui.ShowSettings = !Store.Ui.ShowSettings;
-                    Store.RaiseChanged();
-                }
-            },
-                H("i", new Props { ClassName = "fa-solid fa-gear" }),
-                Span(new() { ClassName = "rail-label" }, Text("Setup"))));
+                    ClassName = active ? "rail-item is-active" : "rail-item",
+                    Title = tab.Label,
+                    OnClick = () =>
+                    {
+                        Store.Ui.ActiveTab = tab.Id;
+                        Store.RaiseChanged();
+                    }
+                },
+                    H("i", new Props { ClassName = tab.Icon }),
+                    Span(new() { ClassName = "rail-label" }, Text(tab.Label)));
+            }));
     }
 }

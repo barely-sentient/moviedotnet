@@ -19,14 +19,17 @@ public sealed class MediaLibrary : Component
     public override Node Render()
     {
         var store = UseContext(EditorContext.Store);
+        var active = store.Ui.ActiveTab;
+        var showLooks = active is "looks" or "transitions" or "effects" or "animations";
+        var looks = active is "transitions" or "effects" or "animations" ? active : store.Ui.LooksTab;
 
         Effect(() => EditorCommands.EnsureCaptureDevices(store), []);
 
         return Div(new() { ClassName = "library" },
             Div(new() { ClassName = "library-head" },
-                Span(new() { ClassName = "library-title" }, Text(TitleFor(store.Ui.ActiveTab))),
+                Span(new() { ClassName = "library-title" }, Text(TitleFor(showLooks ? looks : active))),
                 Div(new() { ClassName = "spacer" }),
-                Show(store.Ui.ActiveTab == "media", Button(new()
+                Show(active == "media", Button(new()
                 {
                     ClassName = "btn is-small",
                     OnClick = OpenMediaBrowser(store)
@@ -34,14 +37,35 @@ public sealed class MediaLibrary : Component
                     H("i", new Props { ClassName = "fa-solid fa-plus" }),
                     Text("Import")))),
             Div(new() { ClassName = "library-body scroll" },
-                Show(store.Ui.ActiveTab == "media", MediaTab(store)),
-                Show(store.Ui.ActiveTab == "text", TextTab(store)),
-                Show(store.Ui.ActiveTab == "audio", AudioTab(store)),
-                Show(store.Ui.ActiveTab == "transitions", TransitionsTab(store)),
-                Show(store.Ui.ActiveTab == "effects", EffectsTab(store)),
-                Show(store.Ui.ActiveTab == "animations", AnimationsTab(store)),
-                Show(store.Ui.ActiveTab == "record", RecordTab(store)),
-                Show(store.Ui.ActiveTab == "settings", SettingsTab(store))));
+                Show(showLooks, LooksTabs(store, looks)),
+                Show(active == "media", MediaTab(store)),
+                Show(active == "text", TextTab(store)),
+                Show(active == "audio", AudioTab(store)),
+                Show(showLooks && looks == "transitions", TransitionsTab(store)),
+                Show(showLooks && looks == "effects", EffectsTab(store)),
+                Show(showLooks && looks == "animations", AnimationsTab(store)),
+                Show(active == "record", RecordTab(store)),
+                Show(active == "settings", SettingsTab(store))));
+    }
+
+    private static Node LooksTabs(EditorStore store, string current)
+    {
+        Node Tab(string id, string label) => Div(new()
+        {
+            ClassName = current == id ? "looks-tab is-active" : "looks-tab",
+            OnClick = () =>
+            {
+                store.Ui.ActiveTab = "looks";
+                store.Ui.LooksTab = id;
+                store.Notify();
+            }
+        },
+            Text(label));
+
+        return Div(new() { ClassName = "looks-tabs" },
+            Tab("transitions", "Transitions"),
+            Tab("effects", "Filters"),
+            Tab("animations", "Motion"));
     }
 
     private static string TitleFor(string tab) => tab switch
@@ -51,6 +75,7 @@ public sealed class MediaLibrary : Component
         "transitions" => "Transitions",
         "effects" => "Effects",
         "animations" => "Motion",
+        "looks" => "Looks",
         "record" => "Record",
         "settings" => "Project setup",
         _ => "Media bin"
@@ -111,6 +136,19 @@ public sealed class MediaLibrary : Component
     private static Node AssetCard(EditorStore store, MediaAsset asset)
     {
         var selected = store.Ui.SelectedAssetId == asset.Id;
+        var dragging = store.Ui.DraggingAssetId == asset.Id;
+        var className = "asset-card";
+
+        if (selected)
+        {
+            className += " is-selected";
+        }
+
+        if (dragging)
+        {
+            className += " is-dragging";
+        }
+
         var meta = asset.Kind switch
         {
             AssetKind.Image => $"{asset.Width}×{asset.Height}",
@@ -120,9 +158,25 @@ public sealed class MediaLibrary : Component
 
         return Div(new()
         {
-            ClassName = selected ? "asset-card is-selected" : "asset-card",
+            ClassName = className,
             Key = asset.Id,
-            Title = $"{asset.Name}\n{asset.Path}",
+            Title = $"{asset.Name}\n{asset.Path}\nDrag to the timeline to place it",
+            Draggable = true,
+            OnDragStart = evt =>
+            {
+                evt.Data.SetData(DragFormats.Asset, asset.Id);
+                evt.Data.EffectAllowed = "copy";
+                store.Ui.DraggingAssetId = asset.Id;
+                store.Ui.DraggingTextPreset = null;
+                store.Notify();
+            },
+            OnDragEnd = evt =>
+            {
+                store.Ui.DraggingAssetId = null;
+                store.Ui.DropTrackId = null;
+                store.Ui.DropTime = 0;
+                store.Notify();
+            },
             OnClick = () =>
             {
                 store.Ui.SelectedAssetId = asset.Id;
@@ -165,7 +219,19 @@ public sealed class MediaLibrary : Component
                         store.Toast($"{asset.Name} added at playhead");
                     }
                 },
-                    H("i", new Props { ClassName = "fa-solid fa-plus" }))),
+                    H("i", new Props { ClassName = "fa-solid fa-plus" })),
+                Show(asset.Kind == AssetKind.Video,
+                    Div(new()
+                    {
+                        ClassName = "asset-pip",
+                        Title = "Add as a picture-in-picture layer",
+                        OnClick = () =>
+                        {
+                            store.AddAssetToTimeline(asset, asOverlay: true);
+                            store.Toast($"{asset.Name} added as a layer");
+                        }
+                    },
+                        H("i", new Props { ClassName = "fa-solid fa-layer-group" })))),
             Div(new() { ClassName = "asset-info" },
                 Span(new() { ClassName = "asset-name" }, Text(asset.Name)),
                 Span(new() { ClassName = "asset-meta" }, Text(meta))));
@@ -181,39 +247,42 @@ public sealed class MediaLibrary : Component
 
     private static Node TextTab(EditorStore store)
     {
-        var presets = new (string Title, string Sample, double Size, string Weight)[]
-        {
-            ("Display", "BIG\nIDEA", 150, "900"),
-            ("Title", "Your story starts here", 84, "700"),
-            ("Subtitle", "A short supporting line", 46, "500"),
-            ("Lower third", "Name / Role", 40, "600"),
-            ("Caption", "Captions for social", 34, "600"),
-            ("Quote", "“Make it real.”", 64, "700")
-        };
-
         return F(
             Div(new() { ClassName = "preset-grid" },
-                Each(presets, preset => Div(new()
-                {
-                    ClassName = "preset-card",
-                    OnClick = () =>
+                Each(
+                    TextPreset.All.Select((preset, index) => (Preset: preset, Index: index)),
+                    item =>
                     {
-                        var clip = store.AddTextClip(preset.Sample.Replace("\\n", "\n"));
-                        store.UpdateClipLive(clip.Id, c =>
+                        var dragging = store.Ui.DraggingTextPreset == item.Index;
+
+                        return Div(new()
                         {
-                            c.FontSize = preset.Size;
-                            c.FontWeight = preset.Weight;
-                            c.Box = preset.Title == "Lower third"
-                                ? new LayerBox { X = 0.07, Y = 0.68, Width = 0.5, Height = 0.16 }
-                                : new LayerBox { X = 0.08, Y = 0.34, Width = 0.84, Height = 0.3 };
-                        });
-                    }
-                },
-                    Span(new() { ClassName = "preset-sample", Attributes = new Dictionary<string, string>
-                    {
-                        ["style"] = $"font-weight:{preset.Weight};font-size:{preset.Size / 6:0}px"
-                    } }, Text(preset.Title)),
-                    Span(new() { ClassName = "preset-label" }, Text(preset.Title))))),
+                            ClassName = dragging ? "preset-card is-dragging" : "preset-card",
+                            Draggable = true,
+                            Title = $"Drag {item.Preset.Title} to the timeline",
+                            OnDragStart = evt =>
+                            {
+                                evt.Data.SetData(DragFormats.TextPreset, item.Index.ToString());
+                                evt.Data.EffectAllowed = "copy";
+                                store.Ui.DraggingTextPreset = item.Index;
+                                store.Ui.DraggingAssetId = null;
+                                store.Notify();
+                            },
+                            OnDragEnd = evt =>
+                            {
+                                store.Ui.DraggingTextPreset = null;
+                                store.Ui.DropTrackId = null;
+                                store.Ui.DropTime = 0;
+                                store.Notify();
+                            },
+                            OnClick = () => item.Preset.AddTo(store)
+                        },
+                            Span(new() { ClassName = "preset-sample", Attributes = new Dictionary<string, string>
+                            {
+                                ["style"] = $"font-weight:{item.Preset.Weight};font-size:{item.Preset.Size / 6:0}px"
+                            } }, Text(item.Preset.Title)),
+                            Span(new() { ClassName = "preset-label" }, Text(item.Preset.Title)));
+                    })),
             Div(new() { ClassName = "library-actions" },
                 Button(new()
                 {
@@ -243,7 +312,23 @@ public sealed class MediaLibrary : Component
             Div(new() { ClassName = "audio-list" },
                 Each(rows, asset => Div(new()
                 {
-                    ClassName = "audio-row",
+                    ClassName = store.Ui.DraggingAssetId == asset.Id ? "audio-row is-dragging" : "audio-row",
+                    Draggable = true,
+                    OnDragStart = evt =>
+                    {
+                        evt.Data.SetData(DragFormats.Asset, asset.Id);
+                        evt.Data.EffectAllowed = "copy";
+                        store.Ui.DraggingAssetId = asset.Id;
+                        store.Ui.DraggingTextPreset = null;
+                        store.Notify();
+                    },
+                    OnDragEnd = evt =>
+                    {
+                        store.Ui.DraggingAssetId = null;
+                        store.Ui.DropTrackId = null;
+                        store.Ui.DropTime = 0;
+                        store.Notify();
+                    },
                     OnClick = () =>
                     {
                         store.AddAssetToTimeline(asset);
@@ -584,170 +669,194 @@ public sealed class MediaLibrary : Component
     private static Node RecordTab(EditorStore store)
     {
         var ui = store.Ui;
+        var source = ui.CaptureSource;
         var cameras = EditorCommands.VideoDevices;
+        var windows = EditorCommands.WindowDevices;
         var microphones = EditorCommands.AudioDevices;
+        var recording = EditorCommands.CameraRecording;
+        var hasScreen = EditorCommands.ScreenDevice is not null;
+        var hasWindow = windows.Count > 0;
         var hasCamera = cameras.Count > 0;
-        var hasMic = microphones.Count > 0;
 
-        var cameraOptions = cameras.Select(d => new ChoiceOption(d.Name, d.Name)).ToList();
-        var micOptions = new List<ChoiceOption> { new("none", "No microphone") };
-        micOptions.AddRange(microphones.Select(d => new ChoiceOption(d.Name, d.Name)));
+        var selectedCamera = cameras.FirstOrDefault(d => d.Name == ui.CameraDevice) ?? cameras.FirstOrDefault();
+        var selectedWindow = windows.FirstOrDefault(d => d.Name == ui.CaptureWindow) ?? windows.FirstOrDefault();
+        var micChoice = ui.RecordWithMic
+            ? ui.MicDevice ?? microphones.FirstOrDefault()?.Name ?? "none"
+            : "none";
+        var width = store.Document.Width;
+        var height = store.Document.Height;
+        var fps = Math.Clamp((int)Math.Round(store.Document.Fps), 24, 60);
 
-        var micChoice = ui.RecordWithMic ? ui.MicDevice ?? "" : "none";
-
-        Node ResolutionChoice() => C<Choice, ChoiceProps>(new ChoiceProps
+        Node SourceTab(string id, string icon, string label)
         {
-            Value = ui.CaptureWidth switch
-            {
-                1920 => "1080p",
-                854 => "480p",
-                _ => "720p"
-            },
-            Options =
-            [
-                new("480p", "480p"),
-                new("720p", "720p"),
-                new("1080p", "1080p")
-            ],
-            OnSelect = value =>
-            {
-                (ui.CaptureWidth, ui.CaptureHeight) = value switch
-                {
-                    "1080p" => (1920, 1080),
-                    "480p" => (854, 480),
-                    _ => (1280, 720)
-                };
-                store.Notify();
-            }
-        });
+            var active = source == id;
 
-        Node FpsChoice() => C<Choice, ChoiceProps>(new ChoiceProps
-        {
-            Value = ui.CaptureFps.ToString(),
-            Options = [new("30", "30 fps"), new("60", "60 fps")],
-            OnSelect = value =>
+            return Div(new()
             {
-                if (int.TryParse(value, out var fps))
+                ClassName = (active ? "segment is-active" : "segment")
+                    + (recording ? " is-disabled" : ""),
+                Title = label,
+                OnClick = () =>
                 {
-                    ui.CaptureFps = fps;
+                    if (EditorCommands.CameraRecording)
+                    {
+                        return;
+                    }
+
+                    ui.CaptureSource = id;
                     store.Notify();
                 }
+            },
+                H("i", new Props { ClassName = icon }),
+                Span(new() { ClassName = "segment-label" }, Text(label)));
+        }
+
+        Node Missing(string copy) =>
+            Div(new() { ClassName = "empty-panel is-compact" },
+                Span(new() { ClassName = "empty-copy" }, Text(copy)),
+                Button(new()
+                {
+                    ClassName = "btn is-small",
+                    OnClick = () => EditorCommands.RefreshCaptureDevices(store)
+                },
+                    H("i", new Props { ClassName = "fa-solid fa-rotate" }),
+                    Text("Refresh")));
+
+        Node Picker()
+        {
+            if (source == "window")
+            {
+                return hasWindow
+                    ? Div(new() { ClassName = "field" },
+                        Span(new() { ClassName = "field-label" }, Text("Window")),
+                        Div(new() { ClassName = "device-list scroll" },
+                            DeviceChoice(
+                                windows.Select(d => (d.Name, d.Name)).ToList(),
+                                selectedWindow?.Name,
+                                value =>
+                                {
+                                    ui.CaptureWindow = value;
+                                    store.Notify();
+                                })))
+                    : Missing("No windows found. Open a window, then refresh.");
             }
-        });
+
+            if (source == "camera")
+            {
+                return hasCamera
+                    ? Div(new() { ClassName = "field" },
+                        Span(new() { ClassName = "field-label" }, Text("Camera")),
+                        DeviceChoice(
+                            cameras.Select(d => (d.Name, d.Name)).ToList(),
+                            selectedCamera?.Name,
+                            value =>
+                            {
+                                ui.CameraDevice = value;
+                                store.Notify();
+                            }))
+                    : Missing("No camera found. Connect one, then refresh.");
+            }
+
+            return Div(new() { ClassName = "capture-source-card" },
+                H("i", new Props { ClassName = "fa-solid fa-display" }),
+                Div(new() { ClassName = "capture-source-text" },
+                    Span(new() { ClassName = "capture-source-name" }, Text("Entire desktop")),
+                    Span(new() { ClassName = "capture-source-meta" },
+                        Text("Full screen, fitted to the project canvas"))));
+        }
+
+        var (previewIcon, previewCopy) = source switch
+        {
+            "window" => ("fa-solid fa-window-maximize",
+                selectedWindow?.Name ?? "Choose a window, then press record"),
+            "camera" => ("fa-solid fa-video",
+                selectedCamera?.Name ?? "Choose a camera, then press record"),
+            _ => ("fa-solid fa-display", "Captures the entire desktop")
+        };
+
+        var recordLabel = source switch
+        {
+            "window" => "Start window recording",
+            "camera" => "Start camera recording",
+            _ => "Start screen recording"
+        };
+
+        var microphoneOptions = new List<(string Value, string Label)>
+        {
+            ("none", "No microphone")
+        };
+        microphoneOptions.AddRange(microphones.Select(d => (d.Name, d.Name)));
 
         return F(
             Div(new() { ClassName = "panel-note" },
                 H("i", new Props { ClassName = "fa-solid fa-circle-info" }),
-                Span(new(), Text("Recordings are saved to Documents/MovieDotNet/Recordings and added to the media bin."))),
+                Span(new(), Text(Ffmpeg.Available
+                    ? $"Record your screen, a window or a camera. Captures fit the {width}×{height} canvas and land in the bin."
+                    : "Recording needs FFmpeg on a desktop host. Playback and editing still work."))),
 
-            Section("Webcam", "fa-solid fa-video", cameras.Count),
-            Show(!hasCamera,
-                Div(new() { ClassName = "empty-panel is-compact" },
-                    Span(new() { ClassName = "empty-copy" },
-                        Text(EditorCommands.DevicesLoaded
-                            ? "No camera found. Connect one and refresh."
-                            : "Looking for capture devices…")),
+            Div(new() { ClassName = "record-block" },
+                Div(new() { ClassName = "field-label" }, Text("Capture source")),
+                Div(new() { ClassName = "segmented capture-segments" },
+                    SourceTab("screen", "fa-solid fa-display", "Screen"),
+                    SourceTab("window", "fa-solid fa-window-maximize", "Window"),
+                    SourceTab("camera", "fa-solid fa-video", "Camera")),
+
+                Div(new() { ClassName = "record-preview" },
+                    Div(new() { ClassName = "record-preview-placeholder" },
+                        H("i", new Props { ClassName = previewIcon }),
+                        Span(new(), Text(previewCopy))),
+                    Div(new() { ClassName = "record-preview-badge" },
+                        Span(new() { ClassName = recording ? "dot is-bad" : "dot" }),
+                        Text(recording ? "Recording" : "Ready"))),
+
+                Picker(),
+
+                Show(source == "window",
+                    Span(new() { ClassName = "capture-hint" },
+                        Text("The selected window comes forward while recording."))),
+
+                Div(new() { ClassName = "capture-meta" },
+                    Span(new() { ClassName = "value-badge" }, Text($"{width}×{height}")),
+                    Span(new() { ClassName = "value-badge" }, Text($"{fps} fps")),
+                    Span(new() { ClassName = "capture-meta-note" }, Text("Fitted to the project canvas"))),
+
+                RecordRow(
+                    recording,
+                    EditorCommands.CameraElapsed,
+                    recordLabel,
+                    () =>
+                    {
+                        if (EditorCommands.CameraRecording)
+                        {
+                            EditorCommands.StopCameraAsync(store);
+                        }
+                        else
+                        {
+                            EditorCommands.StartCamera(store);
+                        }
+                    },
+                    true),
+
+                Div(new() { ClassName = "field" },
+                    Span(new() { ClassName = "field-label" }, Text("Microphone")),
+                    DeviceChoice(
+                        microphoneOptions,
+                        micChoice,
+                        value =>
+                        {
+                            ui.RecordWithMic = value != "none";
+                            ui.MicDevice = value == "none" ? null : value;
+                            store.Notify();
+                        })),
+
+                Show(!hasScreen && source == "screen",
+                    Missing("Screen capture is not available on this host.")),
+
+                Div(new() { ClassName = "record-actions" },
                     Button(new()
                     {
-                        ClassName = "btn is-small",
-                        OnClick = () => EditorCommands.RefreshCaptureDevices(store)
-                    },
-                        H("i", new Props { ClassName = "fa-solid fa-rotate" }),
-                        Text("Refresh")))),
-            Show(hasCamera,
-                Div(new() { ClassName = "record-block" },
-                    Div(new() { ClassName = "record-preview" },
-                        Video(new Donkeh.Windowing.VideoProps
-                        {
-                            Src = "dshow://",
-                            Muted = true,
-                            Loop = false,
-                            Attributes = new Dictionary<string, string>
-                            {
-                                ["style"] = "width:100%;height:100%;object-fit:cover;background-color:#05070c;"
-                            }
-                        }),
-                        Div(new() { ClassName = "record-preview-badge" },
-                            Span(new() { ClassName = "dot" }),
-                            Text("Default camera"))),
-                    RecordRow(
-                        EditorCommands.CameraRecording,
-                        EditorCommands.CameraElapsed,
-                        "Start webcam recording",
-                        () =>
-                        {
-                            if (EditorCommands.CameraRecording)
-                            {
-                                EditorCommands.StopCameraAsync(store);
-                            }
-                            else
-                            {
-                                EditorCommands.StartCamera(store);
-                            }
-                        },
-                        true),
-                    Div(new() { ClassName = "field" },
-                        Span(new() { ClassName = "field-label" }, Text("Camera")),
-                        C<Choice, ChoiceProps>(new ChoiceProps
-                        {
-                            Value = ui.CameraDevice ?? "",
-                            Chips = false,
-                            Options = cameraOptions,
-                            OnSelect = value =>
-                            {
-                                ui.CameraDevice = value;
-                                store.Notify();
-                            }
-                        })),
-                    Div(new() { ClassName = "field-grid" },
-                        Div(new() { ClassName = "field" },
-                            Span(new() { ClassName = "field-label" }, Text("Resolution")),
-                            ResolutionChoice()),
-                        Div(new() { ClassName = "field" },
-                            Span(new() { ClassName = "field-label" }, Text("Frame rate")),
-                            FpsChoice())),
-                    Div(new() { ClassName = "field" },
-                        Span(new() { ClassName = "field-label" }, Text("Microphone")),
-                        C<Choice, ChoiceProps>(new ChoiceProps
-                        {
-                            Value = micChoice,
-                            Chips = false,
-                            Options = micOptions,
-                            OnSelect = value =>
-                            {
-                                ui.RecordWithMic = value != "none";
-                                ui.MicDevice = value == "none" ? null : value;
-                                store.Notify();
-                            }
-                        })))),
-
-            Section("Microphone", "fa-solid fa-microphone", microphones.Count),
-            Show(!hasMic,
-                Div(new() { ClassName = "empty-panel is-compact" },
-                    Span(new() { ClassName = "empty-copy" },
-                        Text(EditorCommands.DevicesLoaded
-                            ? "No microphone found. Connect one and refresh."
-                            : "Looking for capture devices…")))),
-            Show(hasMic,
-                Div(new() { ClassName = "record-block" },
-                    Div(new() { ClassName = "field" },
-                        Span(new() { ClassName = "field-label" }, Text("Input")),
-                        C<Choice, ChoiceProps>(new ChoiceProps
-                        {
-                            Value = ui.MicDevice ?? "",
-                            Chips = false,
-                            Options = microphones.Select(d => new ChoiceOption(d.Name, d.Name)).ToList(),
-                            OnSelect = value =>
-                            {
-                                ui.MicDevice = value;
-                                store.Notify();
-                            }
-                        })),
-                    RecordRow(
-                        EditorCommands.MicrophoneRecording,
-                        EditorCommands.MicrophoneElapsed,
-                        "Start audio recording",
-                        () =>
+                        ClassName = "btn is-small is-ghost",
+                        OnClick = () =>
                         {
                             if (EditorCommands.MicrophoneRecording)
                             {
@@ -757,17 +866,25 @@ public sealed class MediaLibrary : Component
                             {
                                 EditorCommands.StartMicrophone(store);
                             }
-                        },
-                        false))),
-
-            Div(new() { ClassName = "settings-row" },
-                Button(new()
-                {
-                    ClassName = "btn is-small",
-                    OnClick = () => EditorCommands.RefreshCaptureDevices(store)
-                },
-                    H("i", new Props { ClassName = "fa-solid fa-rotate" }),
-                    Text("Refresh devices"))));
+                        }
+                    },
+                        H("i", new Props
+                        {
+                            ClassName = EditorCommands.MicrophoneRecording
+                                ? "fa-solid fa-stop"
+                                : "fa-solid fa-microphone"
+                        }),
+                        Text(EditorCommands.MicrophoneRecording
+                            ? $"Stop audio ({EditorCommands.MicrophoneElapsed.TotalMinutes:00}:{EditorCommands.MicrophoneElapsed.Seconds:00})"
+                            : "Record audio only")),
+                    Div(new() { ClassName = "spacer" }),
+                    Button(new()
+                    {
+                        ClassName = "btn is-small",
+                        OnClick = () => EditorCommands.RefreshCaptureDevices(store)
+                    },
+                        H("i", new Props { ClassName = "fa-solid fa-rotate" }),
+                        Text("Refresh")))));
     }
 
     private static Node RecordRow(
@@ -797,5 +914,20 @@ public sealed class MediaLibrary : Component
             Span(new() { ClassName = "chip" },
                 H("i", new Props { ClassName = withVideo ? "fa-solid fa-film" : "fa-solid fa-music" }),
                 Text(withVideo ? "H.264" : "AAC")));
+    }
+
+    /// <summary>A full-width choice list, used for capture devices.</summary>
+    private static Node DeviceChoice(
+        IReadOnlyList<(string Value, string Label)> options,
+        string? selected,
+        Action<string> onSelect)
+    {
+        return C<Choice, ChoiceProps>(new ChoiceProps
+        {
+            Value = selected ?? "",
+            Chips = false,
+            Options = options.Select(option => new ChoiceOption(option.Value, option.Label)).ToList(),
+            OnSelect = onSelect
+        });
     }
 }

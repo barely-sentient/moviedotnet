@@ -9,19 +9,19 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 52px;
-    min-height: 52px;
-    padding: 0 12px 0 16px;
-    border-bottom: 1px solid var(--line);
+    height: 58px;
+    min-height: 58px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .inspector-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    gap: 9px;
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: 0.005em;
 }
 
 .inspector-title i {
@@ -36,14 +36,14 @@
 
 .inspector-empty {
     display: block;
-    padding: 22px 18px 24px;
+    padding: 24px 20px 26px;
 }
 
 .inspector-empty-head {
     display: flex;
     align-items: flex-start;
-    gap: 13px;
-    margin-bottom: 18px;
+    gap: 14px;
+    margin-bottom: 20px;
 }
 
 .inspector-empty-text {
@@ -54,7 +54,7 @@
 
 .inspector-empty .empty-title {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
     font-size: 15px;
 }
 
@@ -62,48 +62,40 @@
     display: block;
     max-width: none;
     margin-bottom: 0;
-    line-height: 1.55;
-}
-
-.inspector-empty .panel-note {
-    margin: 16px 0 0;
-}
-
-.inspector-empty .stat-grid {
-    margin: 0;
+    line-height: 1.6;
 }
 
 .inspector-empty-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    border-radius: 12px;
-    background-color: var(--card);
-    border: 1px solid var(--line);
-    color: var(--accent);
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 15px;
+    background-color: var(--accent-soft);
+    color: var(--accent-strong);
     font-size: 15px;
 }
 
 .clip-hero {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 18px 16px;
+    gap: 13px;
+    padding: 20px;
+    overflow: hidden;
 }
 
 .clip-hero-thumb {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 66px;
-    height: 50px;
-    border-radius: 9px;
+    width: 74px;
+    height: 56px;
+    border-radius: 12px;
     overflow: hidden;
-    background-color: #0b0e15;
-    border: 1px solid var(--line);
+    background-color: var(--bg-soft);
+    border: 1px solid var(--line-soft);
     color: var(--muted);
     font-size: 14px;
 }
@@ -118,15 +110,14 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
+    flex: 1;
     min-width: 0;
 }
 
 .clip-hero-name {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 650;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .clip-hero-meta {
@@ -136,11 +127,11 @@
 
 .inspector-section {
     display: block;
-    padding: 18px 16px 8px;
+    padding: 20px 20px 8px;
     color: var(--muted);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.09em;
+    font-size: 9.5px;
+    font-weight: 650;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     border-top: 1px solid var(--line-soft);
 }
@@ -148,30 +139,63 @@
 .inspector-actions {
     display: flex;
     gap: 8px;
-    padding: 18px 16px 24px;
+    padding: 20px 20px 26px;
 }
 
 .inspector-actions .btn {
     flex: 1;
 }
 
-.effect-stack {
-    display: block;
-    padding: 4px 16px 10px;
+.frame-presets {
+    display: flex;
+    gap: 8px;
+    padding: 4px 18px 12px;
 }
 
-.effect-stack-row {
-    margin-bottom: 10px;
+.frame-presets .btn {
+    flex: 1;
+}
+
+.advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: 36px;
+    margin: 8px 18px 4px;
+    padding: 0 13px;
+    border: 1px solid var(--line-soft);
+    border-radius: 11px;
+    background-color: transparent;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.advanced-toggle i {
+    width: 14px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: center;
+}
+
+.advanced-toggle:hover {
+    background-color: var(--card);
+    border-color: var(--line);
+    color: var(--text);
+}
+
+.effect-stack {
+    display: block;
+    padding: 4px 18px 10px;
 }
 
 .effect-stack-row {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-.effect-stack-row .effect-name {
-    font-size: 11.5px;
+    margin-bottom: 10px;
 }
 
 .effect-stack-row .effect-name {
@@ -189,21 +213,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
     color: var(--muted);
     cursor: pointer;
 }
 
 .effect-remove:hover {
-    background-color: #2a1a22;
+    background-color: rgba(242, 149, 164, 0.1);
     color: var(--red);
 }
 
 .field-stack {
     display: block;
-    padding: 4px 16px 12px;
+    padding: 4px 18px 12px;
 }
 
 .field-stack .field {
@@ -212,9 +236,9 @@
 
 /* Fields rendered directly in the inspector body sit outside the padded grids. */
 .inspector-body > .field {
-    padding: 0 16px 12px;
+    padding: 0 18px 12px;
 }
 
 .inspector-body > .settings-note {
-    margin: 6px 16px 12px;
+    margin: 6px 18px 12px;
 }

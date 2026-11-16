@@ -23,7 +23,32 @@ public sealed class MediaBrowser : Component
         var store = UseContext(EditorContext.Store);
         var ui = store.Ui;
         var openMode = ui.BrowserMode == "open";
-        var (selected, setSelected) = State<string?>(() => null);
+        var (selected, setSelected) = State<HashSet<string>>(
+            () => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+        void SelectPath(string selectedPath)
+        {
+            if (string.IsNullOrEmpty(selectedPath))
+            {
+                setSelected(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+                return;
+            }
+
+            if (openMode)
+            {
+                setSelected(new HashSet<string>([selectedPath], StringComparer.OrdinalIgnoreCase));
+                return;
+            }
+
+            var next = new HashSet<string>(selected, StringComparer.OrdinalIgnoreCase);
+
+            if (!next.Add(selectedPath))
+            {
+                next.Remove(selectedPath);
+            }
+
+            setSelected(next);
+        }
 
         if (string.IsNullOrWhiteSpace(ui.BrowserPath) || !Directory.Exists(ui.BrowserPath))
         {
@@ -33,7 +58,7 @@ public sealed class MediaBrowser : Component
         }
 
         var path = ui.BrowserPath;
-        var entries = Memo(() => List(path, openMode), path, openMode);
+        var entries = Memo(() => List(path, openMode), path, openMode, ui.BrowserRefresh);
 
         return Div(new() { ClassName = "modal-backdrop" },
             Div(new() { ClassName = "modal browser-modal" },
@@ -61,7 +86,7 @@ public sealed class MediaBrowser : Component
                         OnClick = () =>
                         {
                             ui.BrowserPath = location.Path;
-                            setSelected(null);
+                            setSelected(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
                             store.Notify();
                         }
                     },
@@ -91,7 +116,11 @@ public sealed class MediaBrowser : Component
                         Icon = "fa-solid fa-rotate",
                         Tooltip = "Refresh",
                         Size = "small",
-                        OnClick = store.Notify
+                        OnClick = () =>
+                        {
+                            ui.BrowserRefresh++;
+                            store.Notify();
+                        }
                     })),
 
                 Div(new() { ClassName = "browser-list scroll" },
@@ -99,11 +128,11 @@ public sealed class MediaBrowser : Component
                         Div(new() { ClassName = "empty-panel is-compact" },
                             Span(new() { ClassName = "empty-copy" },
                                 Text(openMode ? "No saved projects here." : "No media in this folder.")))),
-                    Each(entries, entry => Row(store, ui, entry, selected, setSelected))),
+                    Each(entries, entry => Row(store, ui, entry, selected, SelectPath))),
 
                 Div(new() { ClassName = "modal-foot" },
                     Span(new() { ClassName = "browser-selection" },
-                        Text(selected ?? "Nothing selected")),
+                        Text(SelectionLabel(selected, openMode))),
                     Div(new() { ClassName = "spacer" }),
                     Button(new()
                     {
@@ -117,10 +146,10 @@ public sealed class MediaBrowser : Component
                     Button(new()
                     {
                         ClassName = "btn is-accent",
-                        Disabled = selected is null,
+                        Disabled = selected.Count == 0,
                         OnClick = () =>
                         {
-                            if (selected is null)
+                            if (selected.Count == 0)
                             {
                                 return;
                             }
@@ -129,11 +158,11 @@ public sealed class MediaBrowser : Component
 
                             if (openMode)
                             {
-                                EditorCommands.OpenProject(store, selected);
+                                EditorCommands.OpenProject(store, selected.First());
                             }
                             else
                             {
-                                EditorCommands.ImportAsync(store, [selected]);
+                                EditorCommands.ImportAsync(store, selected.ToList());
                             }
 
                             store.Notify();
@@ -143,7 +172,29 @@ public sealed class MediaBrowser : Component
                         Text(openMode ? "Open project" : "Import")))));
     }
 
-    private static Node Row(EditorStore store, EditorUi ui, Entry entry, string? selected, Action<string?> setSelected)
+    private static string SelectionLabel(HashSet<string> selected, bool openMode)
+    {
+        if (selected.Count == 0)
+        {
+            return "Nothing selected";
+        }
+
+        if (openMode)
+        {
+            return Path.GetFileName(selected.First());
+        }
+
+        return selected.Count == 1
+            ? Path.GetFileName(selected.First())
+            : $"{selected.Count} files selected";
+    }
+
+    private static Node Row(
+        EditorStore store,
+        EditorUi ui,
+        Entry entry,
+        HashSet<string> selected,
+        Action<string> setSelected)
     {
         if (entry.IsFolder)
         {
@@ -153,7 +204,7 @@ public sealed class MediaBrowser : Component
                 OnClick = () =>
                 {
                     ui.BrowserPath = entry.Path;
-                    setSelected(null);
+                    setSelected(string.Empty);
                     store.Notify();
                 }
             },
@@ -164,7 +215,7 @@ public sealed class MediaBrowser : Component
                 H("i", new Props { ClassName = "fa-solid fa-chevron-right browser-chevron" }));
         }
 
-        var isSelected = selected == entry.Path;
+        var isSelected = selected.Contains(entry.Path);
 
         return Div(new()
         {

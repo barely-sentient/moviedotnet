@@ -3,39 +3,38 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    background-color: #05070b;
-    border-bottom: 1px solid var(--line);
+    background-color: transparent;
 }
 
 .preview-head {
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: 46px;
-    min-height: 46px;
-    padding: 0 16px;
-    background-color: var(--panel);
-    border-bottom: 1px solid var(--line);
+    gap: 10px;
+    height: 54px;
+    min-height: 54px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .preview-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-right: 6px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    margin-right: 2px;
+    font-size: 12.5px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
 }
 
 .preview-title i {
     color: var(--accent);
+    font-size: 12px;
 }
 
-.chip.is-accent {
-    border-color: #2f4470;
-    background-color: #16203a;
-    color: #cdd9ff;
+.preview-meta {
+    color: var(--muted);
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
 }
 
 .preview-stage {
@@ -45,44 +44,42 @@
     justify-content: center;
     flex: 1;
     min-height: 0;
-    padding: 16px;
+    padding: 22px;
     overflow: hidden;
-    background-color: #06080d;
-    background-image: radial-gradient(circle at 50% 40%, #101827 0%, #05070b 70%);
+    background-color: #0a0c12;
+    background-image: radial-gradient(circle at 50% 42%, #131827 0%, #090b11 74%);
 }
 
 .pv-canvas {
     position: relative;
     overflow: hidden;
-    border-radius: 4px;
-    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px #262e40;
+    border-radius: 12px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .pv-media {
     display: block;
+    cursor: move;
 }
 
 .pv-text {
     display: block;
     overflow: visible;
+    cursor: move;
     font-family: "Segoe UI", "Inter", sans-serif;
 }
 
 .pv-selection {
-    box-shadow: 0 0 0 3px rgba(63, 124, 255, 0.18);
+    box-shadow: 0 0 0 3px rgba(151, 167, 255, 0.22);
 }
 
 .pv-handle {
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 
-.pv-capture {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    cursor: move;
+.is-mobile .pv-handle {
+    display: none;
 }
 
 .pv-empty {
@@ -95,9 +92,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    color: #46536d;
-    background-image: radial-gradient(circle at 50% 45%, #131c2d 0%, #0a0e16 60%);
+    gap: 7px;
+    color: #4d5871;
+    background-image: radial-gradient(circle at 50% 45%, #141a29 0%, #0b0e16 62%);
 }
 
 .pv-empty i {
@@ -107,16 +104,16 @@
 
 .pv-empty-title {
     font-size: 13px;
-    font-weight: 700;
-    color: #8fa1c4;
+    font-weight: 650;
+    color: #9aa9c8;
 }
 
 .pv-empty-copy {
     font-size: 11px;
-    color: #5c6a86;
+    color: #626f8a;
     max-width: 240px;
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
 /* ---------------------------------------------------------------- transport */
@@ -124,63 +121,75 @@
 .transport {
     display: flex;
     align-items: center;
-    gap: 6px;
-    height: 58px;
-    min-height: 58px;
-    padding: 0 18px;
-    background-color: var(--panel);
-    border-top: 1px solid var(--line);
+    gap: 10px;
+    height: 64px;
+    min-height: 64px;
+    padding: 0 20px;
+    border-top: 1px solid var(--line-soft);
+}
+
+.transport-main {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .play-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
-    background-image: linear-gradient(135deg, #4f7dff, #6d64ff);
-    color: #ffffff;
+    background-image: linear-gradient(135deg, #a6b3ff 0%, #c9b9ff 100%);
+    color: var(--accent-ink);
     font-size: 13px;
     cursor: pointer;
-    box-shadow: 0 8px 20px rgba(79, 125, 255, 0.4);
-    margin: 0 4px;
+    box-shadow: 0 10px 24px rgba(151, 167, 255, 0.26);
+    margin: 0 6px;
 }
 
 .play-button:hover {
-    background-image: linear-gradient(135deg, #6b92ff, #8a7dff);
+    background-image: linear-gradient(135deg, #b6c1ff 0%, #d5c7ff 100%);
 }
 
 .timecode {
     display: flex;
     align-items: center;
-    gap: 9px;
-    margin-left: 10px;
-    padding: 7px 14px;
-    border-radius: 9px;
-    background-color: #0b0e15;
-    border: 1px solid var(--line);
+    gap: 8px;
+    padding: 6px 13px;
+    border-radius: 11px;
+    background-color: var(--bg-soft);
+    border: 1px solid var(--line-soft);
 }
 
 .timecode-now {
     font-family: "Consolas", "Cascadia Mono", monospace;
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #eaf0ff;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: #e8ecff;
 }
 
 .timecode-sep {
     color: #46536d;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
-    padding: 0 3px;
+    padding: 0 2px;
 }
 
 .timecode-total {
     font-family: "Consolas", "Cascadia Mono", monospace;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.1;
     color: var(--muted);
+}
+
+.transport-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #5f6b82;
+    font-size: 10.5px;
 }
 
 .preview-zoom {
@@ -192,8 +201,7 @@
     font-size: 11px;
 }
 
-
-
+/* ----------------------------------------------------------------- overlays */
 
 .pv-decoding {
     position: absolute;
@@ -201,10 +209,12 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background-color: #0a0f18;
-    color: #8fa1c4;
+    background-color: rgba(9, 12, 19, 0.66);
+    color: #9aa9c8;
     font-size: 11px;
     font-weight: 600;
+    pointer-events: none;
+    border-radius: 10px;
 }
 
 .pv-decoding i {
@@ -212,19 +222,13 @@
     font-size: 14px;
 }
 
-.pv-poster {
-    opacity: 1;
-}
-
-.pv-decoding {
-    pointer-events: none;
-    background-color: rgba(8, 12, 20, 0.55);
-    border-radius: 4px;
-}
-
 .pv-decoding span {
     color: #a9b8d6;
-    font-size: 10.5px;
-    letter-spacing: 0.04em;
+    font-size: 10px;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
+}
+
+.pv-poster {
+    opacity: 1;
 }

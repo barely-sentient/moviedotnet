@@ -16,29 +16,17 @@ public sealed class Inspector : Component
     {
         var store = UseContext(EditorContext.Store);
         var clip = store.SelectedClip;
+        var (advanced, setAdvanced) = State(false);
 
         return Div(new() { ClassName = "inspector" },
             Div(new() { ClassName = "inspector-head" },
                 Div(new() { ClassName = "inspector-title" },
                     H("i", new Props { ClassName = clip is null ? "fa-solid fa-diagram-project" : IconFor(clip) }),
-                    Span(new(), Text(clip is null ? "Inspector" : ClipKindName(clip)))),
-                Div(new() { ClassName = "spacer" }),
-                Show(clip is not null, C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-copy",
-                    Tooltip = "Duplicate clip",
-                    Size = "small",
-                    OnClick = store.DuplicateSelected
-                })),
-                Show(clip is not null, C<IconButton, IconButtonProps>(new IconButtonProps
-                {
-                    Icon = "fa-solid fa-trash",
-                    Tooltip = "Delete clip",
-                    Size = "small",
-                    OnClick = store.DeleteSelected
-                }))),
+                    Span(new(), Text(clip is null ? "Inspector" : ClipKindName(clip))))),
             Div(new() { ClassName = "inspector-body scroll" },
-                clip is null ? Empty(store) : ClipInspector(store, clip)));
+                clip is null
+                    ? Empty(store)
+                    : ClipInspector(store, clip, advanced, () => setAdvanced(!advanced))));
     }
 
     private static string ClipKindName(Clip clip) => clip.Kind switch
@@ -66,19 +54,16 @@ public sealed class Inspector : Component
         return Div(new() { ClassName = "inspector-empty" },
             Div(new() { ClassName = "inspector-empty-head" },
                 Div(new() { ClassName = "inspector-empty-icon" },
-                    H("i", new Props { ClassName = "fa-solid fa-sliders" })),
+                    H("i", new Props { ClassName = "fa-solid fa-wand-magic-sparkles" })),
                 Div(new() { ClassName = "inspector-empty-text" },
-                    Span(new() { ClassName = "empty-title" }, Text("Select a clip")),
+                    Span(new() { ClassName = "empty-title" }, Text("Make it yours")),
                     Span(new() { ClassName = "empty-copy" },
-                        Text("Click any clip in the timeline to edit its transform, motion, transition and effects.")))),
+                        Text("Select a clip to shape its frame, sound and motion. Everything updates live.")))),
             Div(new() { ClassName = "stat-grid" },
                 Stat("Clips", clips.ToString()),
                 Stat("Tracks", document.Tracks.Count.ToString()),
                 Stat("Video", Format.Short(videoSeconds)),
-                Stat("Duration", Format.Time(document.Duration))),
-            Div(new() { ClassName = "panel-note" },
-                H("i", new Props { ClassName = "fa-solid fa-circle-info" }),
-                Span(new(), Text("Transitions require overlapping clips. Choosing one makes the overlap for you."))));
+                Stat("Duration", Format.Time(document.Duration))));
     }
 
     private static Node Stat(string label, string value) =>
@@ -86,9 +71,10 @@ public sealed class Inspector : Component
             Span(new() { ClassName = "stat-value" }, Text(value)),
             Span(new() { ClassName = "stat-label" }, Text(label)));
 
-    private static Node ClipInspector(EditorStore store, Clip clip)
+    private static Node ClipInspector(EditorStore store, Clip clip, bool advanced, Action toggleAdvanced)
     {
         var asset = store.Document.FindAsset(clip.AssetId);
+        var visual = clip.Kind is TrackKind.Video or TrackKind.Overlay;
 
         Node Slider(string label, double value, double min, double max, double step, string suffix, Action<double> apply) =>
             Div(new() { ClassName = "slider-row" },
@@ -130,29 +116,43 @@ public sealed class Inspector : Component
 
             Show(clip.Kind == TrackKind.Text, TextSection(store, clip)),
 
-            SectionTitle("Timing"),
+            SectionTitle("Frame"),
+            Show(visual, TransformPresets(store, clip, asset)),
             Div(new() { ClassName = "field-grid" },
-                NumberField("Start", clip.Start, value => store.EditCoalesced(_ => clip.Start = Math.Max(0, value), "clip-start")),
-                NumberField("Length", clip.Duration, value => store.EditCoalesced(_ => clip.Duration = Math.Max(0.15, value), "clip-length")),
-                NumberField("In point", clip.InPoint, value => store.EditCoalesced(_ => clip.InPoint = Math.Max(0, value), "clip-in"),
-                    wide: clip.Kind == TrackKind.Text),
-                Show(clip.Kind != TrackKind.Text,
-                    NumberField("Speed", clip.Speed, value => store.EditCoalesced(_ => clip.Speed = Math.Clamp(value, 0.1, 4), "clip-speed")))),
+                NumberField("X %", clip.Box.X * 100, value => Mutate(store, clip, c => c.Box.X = value / 100, "t-x")),
+                NumberField("Y %", clip.Box.Y * 100, value => Mutate(store, clip, c => c.Box.Y = value / 100, "t-y")),
+                NumberField("Width %", clip.Box.Width * 100, value => Mutate(store, clip, c => c.Box.Width = Math.Max(0.02, value / 100), "t-w")),
+                NumberField("Height %", clip.Box.Height * 100, value => Mutate(store, clip, c => c.Box.Height = Math.Max(0.02, value / 100), "t-h"))),
 
-            SectionTitle("Transform"),
-            Slider("Position X", clip.Box.X * 100, -20, 110, 1, "%", value => Mutate(store, clip, c => c.Box.X = value / 100, "t-x")),
-            Slider("Position Y", clip.Box.Y * 100, -20, 110, 1, "%", value => Mutate(store, clip, c => c.Box.Y = value / 100, "t-y")),
-            Slider("Width", clip.Box.Width * 100, 5, 150, 1, "%", value => Mutate(store, clip, c => c.Box.Width = value / 100, "t-w")),
-            Slider("Height", clip.Box.Height * 100, 5, 150, 1, "%", value => Mutate(store, clip, c => c.Box.Height = value / 100, "t-h")),
-            Slider("Rotation", clip.Rotation, -180, 180, 1, "°", value => Mutate(store, clip, c => c.Rotation = value, "t-r")),
-
-            SectionTitle("Appearance"),
             Slider("Opacity", clip.Opacity * 100, 0, 100, 1, "%", value => Mutate(store, clip, c => c.Opacity = value / 100, "opacity")),
-            Show(clip.Kind != TrackKind.Text && clip.Kind != TrackKind.Audio,
+            Show(clip.Kind is TrackKind.Video or TrackKind.Overlay or TrackKind.Audio,
                 Slider("Audio level", clip.Volume * 100, 0, 200, 1, "%", value => Mutate(store, clip, c => c.Volume = value / 100, "volume"))),
 
-            Show(clip.Kind != TrackKind.Text && clip.Kind != TrackKind.Audio, MotionSection(store, clip)),            Show(clip.Kind != TrackKind.Audio, TransitionSection(store, clip)),
-            Show(clip.Effects.Count > 0, EffectSection(store, clip)),
+            Button(new()
+            {
+                ClassName = "advanced-toggle",
+                OnClick = toggleAdvanced
+            },
+                H("i", new Props { ClassName = advanced ? "fa-solid fa-chevron-up" : "fa-solid fa-sliders" }),
+                Span(new(), Text(advanced ? "Hide advanced controls" : "More controls"))),
+
+            Show(advanced, F(
+                SectionTitle("Timing"),
+                Div(new() { ClassName = "field-grid" },
+                    NumberField("Start (s)", clip.Start, value => store.EditCoalesced(_ => clip.Start = Math.Max(0, value), "clip-start")),
+                    NumberField("Length (s)", clip.Duration, value => store.EditCoalesced(_ => clip.Duration = Math.Max(0.15, value), "clip-length")),
+                    Show(clip.Kind != TrackKind.Text,
+                        NumberField("In point (s)", clip.InPoint, value => store.EditCoalesced(_ => clip.InPoint = Math.Max(0, value), "clip-in"))),
+                    Show(clip.Kind != TrackKind.Text,
+                        NumberField("Speed", clip.Speed, value => store.EditCoalesced(_ => clip.Speed = Math.Clamp(value, 0.1, 4), "clip-speed")))),
+
+                SectionTitle("Rotation"),
+                Slider("Angle", clip.Rotation, -180, 180, 1, "°", value => Mutate(store, clip, c => c.Rotation = value, "t-r")),
+
+                Show(clip.Kind != TrackKind.Text && clip.Kind != TrackKind.Audio, MotionSection(store, clip)),
+                Show(clip.Kind != TrackKind.Audio, TransitionSection(store, clip)),
+                Show(clip.Effects.Count > 0, EffectSection(store, clip)))),
+
             Div(new() { ClassName = "inspector-actions" },
                 Button(new()
                 {
@@ -195,6 +195,36 @@ public sealed class Inspector : Component
                     }
                 }
             }));
+
+    /// <summary>One-click full-frame and picture-in-picture framing for a layer.</summary>
+    private static Node TransformPresets(EditorStore store, Clip clip, MediaAsset? asset)
+    {
+        var document = store.Document;
+        var canvasAspect = document.Width / (double)Math.Max(1, document.Height);
+        var sourceAspect = asset is { Width: > 0, Height: > 0 }
+            ? asset.Width / (double)asset.Height
+            : canvasAspect;
+        var width = 0.32;
+        var height = Math.Clamp(width * canvasAspect / Math.Max(0.1, sourceAspect), 0.08, 0.95);
+
+        Node Preset(string icon, string label, LayerBox box) => Button(new()
+        {
+            ClassName = "btn is-small",
+            OnClick = () => Mutate(store, clip, c => c.Box = box, "t-preset")
+        },
+            H("i", new Props { ClassName = icon }),
+            Text(label));
+
+        return Div(new() { ClassName = "frame-presets" },
+            Preset("fa-solid fa-expand", "Full frame", new LayerBox()),
+            Preset("fa-solid fa-clone", "Picture in picture", new LayerBox
+            {
+                X = Math.Max(0, 1 - width - 0.04),
+                Y = Math.Max(0, 1 - height - 0.04),
+                Width = width,
+                Height = height
+            }));
+    }
 
     private static void Mutate(EditorStore store, Clip clip, Action<Clip> change, string label) =>
         store.EditCoalesced(_ => change(clip), label);
@@ -243,7 +273,7 @@ public sealed class Inspector : Component
             Div(new() { ClassName = "field" },
                 Span(new() { ClassName = "field-label" }, Text("Colour")),
                 Div(new() { ClassName = "color-row" },
-                    Each(new[] { "#ffffff", "#0b0d12", "#4f7dff", "#a06bff", "#2fd39b", "#ffae4d", "#ff5f9e" }, color =>
+                    Each(new[] { "#ffffff", "#0b0d12", "#97a7ff", "#c3a6ff", "#8edcc0", "#ecc39a", "#f0b4cc" }, color =>
                         Div(new()
                         {
                             ClassName = clip.Color == color ? "swatch is-active" : "swatch",
@@ -258,28 +288,7 @@ public sealed class Inspector : Component
                         ClassName = clip.Align == option.Item1 ? "segment is-active" : "segment",
                         OnClick = () => store.Edit(_ => clip.Align = option.Item1, "text-align")
                     },
-                        H("i", new Props { ClassName = option.Item2 })))),
-
-            Div(new() { ClassName = "slider-row" },
-                Div(new() { ClassName = "slider-head" },
-                    Span(new() { ClassName = "field-label" }, Text("Letter spacing")),
-                    Span(new() { ClassName = "value-badge" }, Text($"{clip.LetterSpacing:0.##}"))),
-                Input(new()
-                {
-                    Type = "range",
-                    Value = clip.LetterSpacing.ToString("0.##"),
-                    Attributes = new Dictionary<string, string>
-                    {
-                        ["min"] = "-20", ["max"] = "30", ["step"] = "0.5"
-                    },
-                    OnInput = value =>
-                    {
-                        if (double.TryParse(value, out var spacing))
-                        {
-                            store.EditCoalesced(_ => clip.LetterSpacing = spacing, "text-spacing");
-                        }
-                    }
-                })));
+                        H("i", new Props { ClassName = option.Item2 })))));
     }
 
     private static Node MotionSection(EditorStore store, Clip clip) =>

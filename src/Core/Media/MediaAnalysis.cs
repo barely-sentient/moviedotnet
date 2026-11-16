@@ -78,6 +78,7 @@ public static class MediaAnalysis
 
         var extension = Path.GetExtension(path).ToLowerInvariant();
         var kind = extension is ".png" or ".jpg" or ".jpeg" or ".webp" or ".bmp" or ".gif"
+            or ".tif" or ".tiff" or ".heic" or ".heif" or ".avif" or ".tga" or ".svg"
             ? AssetKind.Image
             : info.HasAudio && info.Width == 0
                 ? AssetKind.Audio
@@ -158,9 +159,22 @@ public static class MediaAnalysis
     }
 
     /// <summary>Supported media extensions for the in-app browser.</summary>
-    public static readonly string[] VideoExtensions = [".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".wmv", ".mpg", ".mpeg", ".ts"];
-    public static readonly string[] AudioExtensions = [".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".wma"];
-    public static readonly string[] ImageExtensions = [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"];
+    public static readonly string[] VideoExtensions =
+    [
+        ".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".wmv", ".mpg", ".mpeg",
+        ".ts", ".mxf", ".m2ts", ".mts", ".3gp", ".3g2", ".m2v", ".vob", ".flv",
+        ".f4v", ".ogv", ".mjpeg"
+    ];
+    public static readonly string[] AudioExtensions =
+    [
+        ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".wma",
+        ".aif", ".aiff", ".caf", ".amr", ".ac3"
+    ];
+    public static readonly string[] ImageExtensions =
+    [
+        ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff",
+        ".heic", ".heif", ".avif", ".tga", ".svg"
+    ];
     public static readonly string[] AllExtensions = [.. VideoExtensions, .. AudioExtensions, .. ImageExtensions];
 
     public static bool IsSupported(string path) =>
