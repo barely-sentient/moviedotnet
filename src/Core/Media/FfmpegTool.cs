@@ -5,6 +5,15 @@ using System.Text.Json;
 
 namespace MovieDotNet.Core.Media;
 
+/// <summary>One stream reported by ffprobe.</summary>
+/// <param name="Index">The zero-based stream index.</param>
+/// <param name="CodecType">The stream type, for example <c>video</c> or <c>audio</c>.</param>
+/// <param name="CodecName">The codec short name.</param>
+/// <param name="Width">The video width, or zero for non-video streams.</param>
+/// <param name="Height">The video height, or zero for non-video streams.</param>
+/// <param name="Fps">The average frame rate, or zero when unknown.</param>
+/// <param name="Duration">The stream duration in seconds.</param>
+/// <param name="Channels">The audio channel count, or zero.</param>
 public sealed record FfprobeStream(
     int Index,
     string CodecType,
@@ -15,6 +24,14 @@ public sealed record FfprobeStream(
     double Duration,
     int Channels);
 
+/// <summary>The stream metadata the editor needs from ffprobe.</summary>
+/// <param name="Duration">The media duration in seconds.</param>
+/// <param name="Width">The video width in pixels, or zero for audio-only media.</param>
+/// <param name="Height">The video height in pixels, or zero for audio-only media.</param>
+/// <param name="Fps">The average video frame rate.</param>
+/// <param name="HasAudio">Whether an audio stream is present.</param>
+/// <param name="VideoCodec">The video codec short name, or an empty string.</param>
+/// <param name="AudioCodec">The audio codec short name, or an empty string.</param>
 public sealed record MediaInfo(
     double Duration,
     int Width,
@@ -34,11 +51,19 @@ public static class Ffmpeg
     private static readonly Lazy<string?> ResolvedFfmpeg = new(() => Resolve("ffmpeg.exe"));
     private static readonly Lazy<string?> ResolvedFfprobe = new(() => Resolve("ffprobe.exe"));
 
+    /// <summary>Gets the resolved ffmpeg executable path, or <see langword="null"/>.</summary>
     public static string? Exe => ResolvedFfmpeg.Value;
+
+    /// <summary>Gets the resolved ffprobe executable path, or <see langword="null"/>.</summary>
     public static string? ProbeExe => ResolvedFfprobe.Value;
+
+    /// <summary>Gets whether ffmpeg was found.</summary>
     public static bool Available => Exe is not null;
+
+    /// <summary>Gets whether ffprobe was found.</summary>
     public static bool ProbeAvailable => ProbeExe is not null;
 
+    /// <summary>Gets a human-readable tool status for the title bar and setup panel.</summary>
     public static string Status => Exe is null
         ? "ffmpeg not found"
         : $"ffmpeg: {Exe}";
@@ -143,8 +168,13 @@ public static class Ffmpeg
         return null;
     }
 
+    /// <summary>The captured result of one ffmpeg process invocation.</summary>
+    /// <param name="ExitCode">The process exit code.</param>
+    /// <param name="StandardError">The captured standard error text.</param>
+    /// <param name="StandardOutput">The captured standard output text.</param>
     public sealed record RunResult(int ExitCode, string StandardError, string StandardOutput)
     {
+        /// <summary>Gets whether ffmpeg exited successfully.</summary>
         public bool Ok => ExitCode == 0;
     }
 
@@ -360,6 +390,8 @@ public static class Ffmpeg
         element.TryGetProperty(name, out var value) && value.TryGetInt32(out var parsed) ? parsed : 0;
 
     /// <summary>Quotes a value for ffmpeg's filtergraph dialect.</summary>
+    /// <param name="value">The raw value to escape.</param>
+    /// <returns>The escaped value for use inside a filter argument.</returns>
     public static string EscapeFilterValue(string value) =>
         value.Replace("\\", "\\\\").Replace("'", "\\'").Replace(":", "\\:").Replace("%", "\\%");
 }
@@ -367,6 +399,9 @@ public static class Ffmpeg
 /// <summary>Splits a command line into ffmpeg arguments, honouring double quotes.</summary>
 public static class FfmpegArgs
 {
+    /// <summary>Splits a command line into arguments, treating double quotes as grouping.</summary>
+    /// <param name="arguments">The command-line text.</param>
+    /// <returns>The arguments in order, without the surrounding quotes.</returns>
     public static List<string> Split(string arguments)
     {
         var result = new List<string>();

@@ -6,47 +6,122 @@ namespace MovieDotNet.Core;
 /// <summary>Transient editor state that is not saved with the project.</summary>
 public sealed class EditorUi
 {
+    /// <summary>Gets or sets the selected clip id, or <see langword="null"/>.</summary>
     public string? SelectedClipId { get; set; }
+
+    /// <summary>Gets or sets the selected media asset id, or <see langword="null"/>.</summary>
     public string? SelectedAssetId { get; set; }
+
+    /// <summary>Gets or sets the selected track id, or <see langword="null"/>.</summary>
     public string? SelectedTrackId { get; set; }
+
+    /// <summary>Gets or sets the current playhead position in seconds.</summary>
     public double Playhead { get; set; }
+
+    /// <summary>Gets or sets whether the transport is playing.</summary>
     public bool Playing { get; set; }
+
+    /// <summary>Gets or sets the timeline zoom in pixels per second.</summary>
     public double Zoom { get; set; } = 64;
+
+    /// <summary>Gets or sets the timeline horizontal scroll offset in pixels.</summary>
     public double ScrollX { get; set; }
+
+    /// <summary>Gets or sets whether edits snap to clip edges and the playhead.</summary>
     public bool Snap { get; set; } = true;
+
+    /// <summary>Gets or sets whether the timeline automatically fits the whole edit.</summary>
     public bool TimelineFit { get; set; } = true;
+
+    /// <summary>Gets or sets whether the render dialog is open.</summary>
     public bool ShowExport { get; set; }
+
+    /// <summary>Gets or sets whether the media browser is open.</summary>
     public bool ShowBrowser { get; set; }
+
+    /// <summary>Gets or sets whether the project setup panel is open.</summary>
     public bool ShowSettings { get; set; }
+
+    /// <summary>Gets or sets whether the shortcut reference is open.</summary>
     public bool ShowShortcuts { get; set; }
+
+    /// <summary>Gets or sets the active left-rail destination.</summary>
     public string ActiveTab { get; set; } = "media";
+
+    /// <summary>Gets or sets the active Looks sub-tab.</summary>
     public string LooksTab { get; set; } = "transitions";
+
+    /// <summary>Gets or sets the active phone-shell page.</summary>
     public string MobilePage { get; set; } = "preview";
+
+    /// <summary>Gets or sets the media browser mode: media or open.</summary>
     public string BrowserMode { get; set; } = "media";
+
+    /// <summary>Gets or sets the folder currently shown by the media browser.</summary>
     public string BrowserPath { get; set; } = "";
+
+    /// <summary>Gets or sets a counter that forces the browser to reload.</summary>
     public int BrowserRefresh { get; set; }
+
+    /// <summary>Gets or sets the current toast message, or <see langword="null"/>.</summary>
     public string? Toast { get; set; }
+
+    /// <summary>Gets or sets the tick at which the toast expires.</summary>
     public double ToastUntil { get; set; }
+
+    /// <summary>Gets or sets whether a long-running operation is in progress.</summary>
     public bool Busy { get; set; }
+
+    /// <summary>Gets or sets the label shown on the busy pill.</summary>
     public string BusyLabel { get; set; } = "";
+
+    /// <summary>Gets or sets the busy progress in the range 0..1.</summary>
     public double BusyProgress { get; set; }
+
+    /// <summary>Gets or sets whether the program monitor is expanded.</summary>
     public bool PreviewFullscreen { get; set; }
+
+    /// <summary>Gets or sets the latest ffmpeg log tail shown by the render dialog.</summary>
     public string? Log { get; set; }
 
     // Capture settings shared by the Record tab.
+
+    /// <summary>Gets or sets the capture source: screen, window or camera.</summary>
     public string CaptureSource { get; set; } = "screen";
+
+    /// <summary>Gets or sets the selected camera device name.</summary>
     public string? CameraDevice { get; set; }
+
+    /// <summary>Gets or sets the selected window title for window capture.</summary>
     public string? CaptureWindow { get; set; }
+
+    /// <summary>Gets or sets the selected microphone device name.</summary>
     public string? MicDevice { get; set; }
+
+    /// <summary>Gets or sets the last capture width in pixels.</summary>
     public int CaptureWidth { get; set; } = 1920;
+
+    /// <summary>Gets or sets the last capture height in pixels.</summary>
     public int CaptureHeight { get; set; } = 1080;
+
+    /// <summary>Gets or sets the last capture frame rate.</summary>
     public int CaptureFps { get; set; } = 30;
+
+    /// <summary>Gets or sets whether video capture also records the microphone.</summary>
     public bool RecordWithMic { get; set; } = true;
 
     // HTML-style drag state, used to highlight and place dropped media.
+
+    /// <summary>Gets or sets the asset id currently being dragged.</summary>
     public string? DraggingAssetId { get; set; }
+
+    /// <summary>Gets or sets the text preset index currently being dragged.</summary>
     public int? DraggingTextPreset { get; set; }
+
+    /// <summary>Gets or sets the track highlighted as the current drop target.</summary>
     public string? DropTrackId { get; set; }
+
+    /// <summary>Gets or sets the preferred drop time in seconds.</summary>
     public double DropTime { get; set; }
 }
 
@@ -58,6 +133,7 @@ public sealed class EditorUi
 /// </summary>
 public sealed class EditorStore
 {
+    /// <summary>Gets the JSON contract used for projects, undo snapshots and cloning.</summary>
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -72,6 +148,9 @@ public sealed class EditorStore
     private string? _lastLabel;
     private long _lastEditTicks;
 
+    /// <summary>Creates a store around an existing document.</summary>
+    /// <param name="document">The document to edit.</param>
+    /// <param name="projectPath">The source project path, or <see langword="null"/> for a new document.</param>
     public EditorStore(ProjectDocument document, string? projectPath = null)
     {
         Document = document;
@@ -79,12 +158,23 @@ public sealed class EditorStore
         Ui = new EditorUi();
     }
 
+    /// <summary>Gets the current project document.</summary>
     public ProjectDocument Document { get; private set; }
+
+    /// <summary>Gets the transient editor UI state.</summary>
     public EditorUi Ui { get; }
+
+    /// <summary>Gets the project file path, or <see langword="null"/> when unsaved.</summary>
     public string? ProjectPath { get; private set; }
+
+    /// <summary>Gets whether the document changed since the last save.</summary>
     public bool Dirty { get; private set; }
+
+    /// <summary>Raised after a mutation or a UI-state change.</summary>
     public event Action? Changed;
 
+    /// <summary>Creates an empty project with the default overlay, video and audio tracks.</summary>
+    /// <returns>A ready-to-edit store.</returns>
     public static EditorStore CreateNew() =>
         new(new ProjectDocument
         {
@@ -97,7 +187,10 @@ public sealed class EditorStore
             }
         });
 
+    /// <summary>Raises <see cref="Changed"/> so the host re-renders.</summary>
     public void Notify() => Changed?.Invoke();
+
+    /// <summary>Raises <see cref="Changed"/> for a UI-only state change.</summary>
     public void RaiseChanged() => Changed?.Invoke();
 
     // ---------------------------------------------------------------- history
@@ -164,9 +257,13 @@ public sealed class EditorStore
         Edit(change, label);
     }
 
+    /// <summary>Gets whether an undo step is available.</summary>
     public bool CanUndo => _undo.Count > 0;
+
+    /// <summary>Gets whether a redo step is available.</summary>
     public bool CanRedo => _redo.Count > 0;
 
+    /// <summary>Restores the previous document snapshot.</summary>
     public void Undo()
     {
         if (_undo.Count == 0)
@@ -181,6 +278,7 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Reapplies the most recently undone snapshot.</summary>
     public void Redo()
     {
         if (_redo.Count == 0)
@@ -222,6 +320,8 @@ public sealed class EditorStore
 
     // ------------------------------------------------------------ persistence
 
+    /// <summary>Writes the project to disk and clears the dirty flag.</summary>
+    /// <param name="path">Destination <c>.mdproj</c> path.</param>
     public void Save(string path)
     {
         File.WriteAllText(path, Serialize());
@@ -243,12 +343,19 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Changes the path associated with the current project without saving.</summary>
+    /// <param name="path">The project path to remember.</param>
     public void SetProjectPath(string path)
     {
         ProjectPath = path;
         Notify();
     }
 
+    /// <summary>Loads a project from disk.</summary>
+    /// <param name="path">Source <c>.mdproj</c> path.</param>
+    /// <returns>A store around the deserialized document.</returns>
+    /// <exception cref="IOException">The file cannot be read.</exception>
+    /// <exception cref="JsonException">The file does not contain a valid project.</exception>
     public static EditorStore Load(string path)
     {
         var json = File.ReadAllText(path);
@@ -258,6 +365,12 @@ public sealed class EditorStore
 
     // --------------------------------------------------------------- playhead
 
+    /// <summary>Moves the playhead, clamped to the project duration.</summary>
+    /// <param name="seconds">Target time in seconds.</param>
+    /// <param name="throttled">
+    /// When <see langword="true"/>, notifications are limited to roughly 36 per
+    /// second during playback or scrubbing.
+    /// </param>
     public void SetPlayhead(double seconds, bool throttled = false)
     {
         seconds = Math.Clamp(seconds, 0, Math.Max(0.1, Document.Duration));
@@ -278,18 +391,23 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Toggles transport playback.</summary>
     public void TogglePlay()
     {
         Ui.Playing = !Ui.Playing;
         Notify();
     }
 
+    /// <summary>Sets the timeline zoom, clamped to a usable range.</summary>
+    /// <param name="zoom">Pixels per second.</param>
     public void SetZoom(double zoom)
     {
         Ui.Zoom = Math.Clamp(zoom, 6, 640);
         Notify();
     }
 
+    /// <summary>Selects a clip and its owning track.</summary>
+    /// <param name="clipId">The clip id, or <see langword="null"/> to clear the selection.</param>
     public void Select(string? clipId)
     {
         Ui.SelectedClipId = clipId;
@@ -297,10 +415,14 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Gets the selected clip, or <see langword="null"/>.</summary>
     public Clip? SelectedClip => Document.FindClip(Ui.SelectedClipId);
 
     // --------------------------------------------------------------- document
 
+    /// <summary>Finds a track of a kind, creating one when necessary.</summary>
+    /// <param name="kind">The track kind to find or create.</param>
+    /// <returns>The existing or newly inserted track.</returns>
     public Track EnsureTrack(TrackKind kind)
     {
         var existing = Document.Tracks.FirstOrDefault(t => t.Kind == kind);
@@ -327,6 +449,9 @@ public sealed class EditorStore
         return track;
     }
 
+    /// <summary>Adds a media asset to the bin, optionally placing it on the timeline.</summary>
+    /// <param name="asset">The analysed asset to add.</param>
+    /// <param name="placeOnTimeline">When <see langword="true"/>, also creates a clip at the playhead.</param>
     public void AddAsset(MediaAsset asset, bool placeOnTimeline = true)
     {
         Document.Assets.Add(asset);
@@ -413,6 +538,11 @@ public sealed class EditorStore
         return clip;
     }
 
+    /// <summary>Creates a title clip, moving it past an existing title when needed.</summary>
+    /// <param name="text">The title text.</param>
+    /// <param name="at">Start time in seconds, or the playhead when omitted.</param>
+    /// <param name="target">The text track a drop landed on, when compatible.</param>
+    /// <returns>The created clip.</returns>
     public Clip AddTextClip(string text, double? at = null, Track? target = null)
     {
         var track = target is { Kind: TrackKind.Text }
@@ -446,6 +576,7 @@ public sealed class EditorStore
         return clip;
     }
 
+    /// <summary>Deletes the selected clip, if any.</summary>
     public void DeleteSelected()
     {
         var clip = SelectedClip;
@@ -460,6 +591,7 @@ public sealed class EditorStore
         Ui.SelectedClipId = null;
     }
 
+    /// <summary>Duplicates the selected clip directly after itself.</summary>
     public void DuplicateSelected()
     {
         var clip = SelectedClip;
@@ -529,6 +661,10 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Moves a clip in time and optionally to another compatible track.</summary>
+    /// <param name="clip">The clip to move.</param>
+    /// <param name="start">The new start time in seconds.</param>
+    /// <param name="track">The destination track, when it has the same kind as the clip.</param>
     public void MoveClip(Clip clip, double start, Track? track = null)
     {
         clip.Start = Math.Max(0, start);
@@ -541,6 +677,10 @@ public sealed class EditorStore
         }
     }
 
+    /// <summary>Trims a clip, keeping the source in-point consistent with the new start.</summary>
+    /// <param name="clip">The clip to trim.</param>
+    /// <param name="start">The new start time in seconds.</param>
+    /// <param name="duration">The new duration in seconds.</param>
     public void TrimClip(Clip clip, double start, double duration)
     {
         var delta = start - clip.Start;
@@ -549,6 +689,10 @@ public sealed class EditorStore
         clip.InPoint = Math.Max(0, clip.InPoint + delta * clip.Speed);
     }
 
+    /// <summary>Changes a clip's incoming transition and optional duration.</summary>
+    /// <param name="clipId">The target clip id.</param>
+    /// <param name="transitionId">The transition registry id.</param>
+    /// <param name="duration">The new duration in seconds, or <see langword="null"/> to keep it.</param>
     public void SetTransition(string clipId, string transitionId, double? duration = null)
     {
         var clip = Document.FindClip(clipId);
@@ -569,6 +713,10 @@ public sealed class EditorStore
         }, "Change transition");
     }
 
+    /// <summary>Applies a clip mutation as one undo step.</summary>
+    /// <param name="clipId">The target clip id.</param>
+    /// <param name="change">The mutation to apply.</param>
+    /// <param name="label">The undo label.</param>
     public void UpdateClip(string clipId, Action<Clip> change, string label = "Update clip")
     {
         var clip = Document.FindClip(clipId);
@@ -581,6 +729,9 @@ public sealed class EditorStore
         Edit(_ => change(clip), label);
     }
 
+    /// <summary>Applies a clip mutation immediately without adding an undo step.</summary>
+    /// <param name="clipId">The target clip id.</param>
+    /// <param name="change">The mutation to apply.</param>
     public void UpdateClipLive(string clipId, Action<Clip> change)
     {
         var clip = Document.FindClip(clipId);
@@ -589,6 +740,9 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Shows a transient message.</summary>
+    /// <param name="message">The message text.</param>
+    /// <param name="seconds">How long the message remains visible.</param>
     public void Toast(string message, double seconds = 3.2)
     {
         Ui.Toast = message;
@@ -596,6 +750,10 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Shows or hides the busy pill.</summary>
+    /// <param name="busy">Whether an operation is running.</param>
+    /// <param name="label">The operation label.</param>
+    /// <param name="progress">Progress in the range 0..1.</param>
     public void SetBusy(bool busy, string label = "", double progress = 0)
     {
         Ui.Busy = busy;
@@ -604,6 +762,9 @@ public sealed class EditorStore
         Notify();
     }
 
+    /// <summary>Updates the busy progress and optional label.</summary>
+    /// <param name="progress">Progress in the range 0..1.</param>
+    /// <param name="label">A new label, or <see langword="null"/> to keep the current one.</param>
     public void SetProgress(double progress, string? label = null)
     {
         Ui.BusyProgress = progress;
@@ -618,13 +779,23 @@ public sealed class EditorStore
 
     // ------------------------------------------------------------------ query
 
+    /// <summary>Finds the media asset behind a clip.</summary>
+    /// <param name="clip">The clip to inspect, or <see langword="null"/>.</param>
+    /// <returns>The matching asset, or <see langword="null"/> for text clips and missing media.</returns>
     public MediaAsset? AssetOf(Clip? clip) => clip is null ? null : Document.FindAsset(clip.AssetId);
 
+    /// <summary>Enumerates visible clips that cover a timeline time.</summary>
+    /// <param name="time">The timeline time in seconds.</param>
+    /// <returns>Track/clip pairs in document order.</returns>
     public IEnumerable<(Track Track, Clip Clip)> ClipsAt(double time) =>
         Document.Tracks
             .Where(t => !t.Hidden)
             .SelectMany(t => t.Clips.Where(c => c.Start <= time && c.End > time).Select(c => (t, c)));
 
+    /// <summary>Snaps a time to the nearest clip edge or the playhead when within a pixel threshold.</summary>
+    /// <param name="time">The proposed time in seconds.</param>
+    /// <param name="ignoreClipId">A clip to exclude, usually the clip being dragged.</param>
+    /// <returns>The snapped time, or the original time when nothing is close enough.</returns>
     public double SnapTime(double time, string? ignoreClipId = null)
     {
         if (!Ui.Snap)

@@ -12,9 +12,16 @@ public sealed class IconButtonProps : Props
     /// <summary>Font Awesome class list, for example <c>fa-solid fa-play</c>.</summary>
     public string Icon { get; init; } = "fa-solid fa-circle";
 
+    /// <summary>Gets the optional text shown beside the icon.</summary>
     public string? Label { get; init; }
+
+    /// <summary>Gets the hover tooltip and accessible label.</summary>
     public string? Tooltip { get; init; }
+
+    /// <summary>Gets whether the button is rendered in its active state.</summary>
     public bool Active { get; init; }
+
+    /// <summary>Gets the button scale: <c>normal</c> or <c>small</c>.</summary>
     public string Size { get; init; } = "normal";
 }
 

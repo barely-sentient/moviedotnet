@@ -5,6 +5,15 @@ namespace MovieDotNet.Core.Media;
 /// <summary>Runs an export and reports progress against the plan duration.</summary>
 public static class ExportService
 {
+    /// <summary>Renders a project through ffmpeg and reports progress.</summary>
+    /// <param name="document">The project to render.</param>
+    /// <param name="settings">Resolution, frame rate, quality and range.</param>
+    /// <param name="outputPath">Destination media path.</param>
+    /// <param name="cacheDirectory">Folder used for intermediate clips.</param>
+    /// <param name="progress">Receives progress in the range 0..1.</param>
+    /// <param name="log">Receives diagnostic output lines.</param>
+    /// <param name="cancellation">Cancels the render and stops ffmpeg.</param>
+    /// <returns>A success flag and the ffmpeg output tail.</returns>
     public static async Task<(bool Ok, string Output)> RenderAsync(
         ProjectDocument document,
         RenderSettings settings,

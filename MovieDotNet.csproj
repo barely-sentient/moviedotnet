@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <!-- Produce XML API docs and surface missing public documentation as CS1591. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Show(...) yields Node? and background commands are intentionally not awaited. -->
     <NoWarn>$(NoWarn);CS8604;CS4014;CS8602</NoWarn>
     <DefaultItemExcludes>$(DefaultItemExcludes);builds/**</DefaultItemExcludes>

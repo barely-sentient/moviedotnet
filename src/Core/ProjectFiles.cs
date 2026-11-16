@@ -7,12 +7,15 @@ namespace MovieDotNet.Core;
 /// </remarks>
 public static class ProjectFiles
 {
+    /// <summary>Gets the folder where saved <c>.mdproj</c> files live.</summary>
     public static string ProjectsDirectory { get; } = Ensure(
         SafeDocuments(), "Projects");
 
+    /// <summary>Gets the folder where renders and frame snapshots are written.</summary>
     public static string RendersDirectory { get; } = Ensure(
         SafeDocuments(), "Renders");
 
+    /// <summary>Gets the folder where screen, window, camera and microphone captures are written.</summary>
     public static string RecordingsDirectory { get; } = Ensure(
         SafeDocuments(), "Recordings");
 
@@ -54,6 +57,9 @@ public static class ProjectFiles
         }
     }
 
+    /// <summary>Makes a display name safe to use as a file name.</summary>
+    /// <param name="name">The project, media or output name.</param>
+    /// <returns>A non-empty file-name fragment.</returns>
     public static string Sanitize(string name)
     {
         var invalid = Path.GetInvalidFileNameChars();
@@ -62,12 +68,21 @@ public static class ProjectFiles
         return string.IsNullOrWhiteSpace(cleaned) ? "project" : cleaned;
     }
 
+    /// <summary>Builds a project path for a display name.</summary>
+    /// <param name="name">The project name.</param>
+    /// <returns>An absolute <c>.mdproj</c> path in <see cref="ProjectsDirectory"/>.</returns>
     public static string ProjectPath(string name) =>
         Path.Combine(ProjectsDirectory, $"{Sanitize(name)}.mdproj");
 
+    /// <summary>Builds a render path for a display name.</summary>
+    /// <param name="name">The output name.</param>
+    /// <param name="extension">The file extension without the leading dot.</param>
+    /// <returns>An absolute output path in <see cref="RendersDirectory"/>.</returns>
     public static string RenderPath(string name, string extension = "mp4") =>
         Path.Combine(RendersDirectory, $"{Sanitize(name)}.{extension}");
 
+    /// <summary>Lists saved projects, newest first.</summary>
+    /// <returns>Absolute project paths; an empty list when the folder is unavailable.</returns>
     public static IReadOnlyList<string> ListProjects()
     {
         try

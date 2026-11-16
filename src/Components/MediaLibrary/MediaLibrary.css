@@ -301,7 +301,6 @@
     color: var(--text);
     letter-spacing: -0.01em;
     white-space: nowrap;
-    overflow: hidden;
 }
 
 .preset-label {
@@ -360,7 +359,7 @@
     gap: 1px;
     flex: 1;
     min-width: 0;
-    padding-left: 3px;
+    padding-left: 8px;
     overflow: hidden;
 }
 

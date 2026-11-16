@@ -12,8 +12,13 @@ public sealed record ChoiceOption(string Value, string Label);
 /// <summary>Props for <see cref="Choice"/>.</summary>
 public sealed class ChoiceProps
 {
+    /// <summary>Gets the selectable options in display order.</summary>
     public IReadOnlyList<ChoiceOption> Options { get; init; } = [];
+
+    /// <summary>Gets the currently selected option value.</summary>
     public string Value { get; init; } = "";
+
+    /// <summary>Gets the callback invoked with the chosen option value.</summary>
     public Action<string>? OnSelect { get; init; }
 
     /// <summary>Use the compact chip layout instead of full-width rows.</summary>

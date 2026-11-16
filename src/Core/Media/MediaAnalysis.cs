@@ -10,6 +10,7 @@ namespace MovieDotNet.Core.Media;
 /// </summary>
 public static class MediaAnalysis
 {
+    /// <summary>Gets the folder containing per-file derivative caches.</summary>
     public static string CacheRoot { get; } = CreateCacheRoot();
 
     private static string CreateCacheRoot()
@@ -36,6 +37,9 @@ public static class MediaAnalysis
         }
     }
 
+    /// <summary>Builds a stable cache key from a file's path, length and write time.</summary>
+    /// <param name="path">The source media path.</param>
+    /// <returns>A short lowercase hexadecimal key.</returns>
     public static string KeyFor(string path)
     {
         try
@@ -165,18 +169,26 @@ public static class MediaAnalysis
         ".ts", ".mxf", ".m2ts", ".mts", ".3gp", ".3g2", ".m2v", ".vob", ".flv",
         ".f4v", ".ogv", ".mjpeg"
     ];
+    /// <summary>Supported audio extensions for the in-app browser.</summary>
     public static readonly string[] AudioExtensions =
     [
         ".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".wma",
         ".aif", ".aiff", ".caf", ".amr", ".ac3"
     ];
+
+    /// <summary>Supported image extensions for the in-app browser.</summary>
     public static readonly string[] ImageExtensions =
     [
         ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff",
         ".heic", ".heif", ".avif", ".tga", ".svg"
     ];
+
+    /// <summary>Every supported video, audio and image extension.</summary>
     public static readonly string[] AllExtensions = [.. VideoExtensions, .. AudioExtensions, .. ImageExtensions];
 
+    /// <summary>Reports whether a path has an extension the editor can import.</summary>
+    /// <param name="path">The candidate media path.</param>
+    /// <returns><see langword="true"/> when the extension is supported.</returns>
     public static bool IsSupported(string path) =>
         AllExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 }

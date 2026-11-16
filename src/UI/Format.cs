@@ -24,8 +24,14 @@ public static class Format
         return $"{(int)span.TotalHours:00}:{span.Minutes:00}:{span.Seconds:00}:{frames:00}";
     }
 
+    /// <summary>Formats a duration compactly, using milliseconds below one second.</summary>
+    /// <param name="seconds">The duration in seconds.</param>
+    /// <returns>A short label such as <c>850ms</c> or <c>6.5s</c>.</returns>
     public static string Short(double seconds) =>
         seconds < 1 ? $"{seconds * 1000:0}ms" : $"{seconds:0.##}s";
 
+    /// <summary>Formats a 0..1 fraction as a whole percentage.</summary>
+    /// <param name="value">The fraction to format.</param>
+    /// <returns>A label such as <c>75%</c>.</returns>
     public static string Percent(double value) => $"{value * 100:0}%";
 }

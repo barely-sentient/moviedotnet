@@ -10,6 +10,10 @@ using static Donkeh.UILab._;
 
 namespace MovieDotNet;
 
+/// <summary>
+/// The MovieDotNet application root. Owns the editor store, the frame clock,
+/// the desktop or phone shell, and the global overlay layers.
+/// </summary>
 [AppRoot(Width = 1600, Height = 980, Title = "MovieDotNet — Video Editor", Frameless = true)]
 public sealed class App : Component
 {
@@ -128,7 +132,10 @@ public sealed class App : Component
                 return;
             }
 
-            Store.Toast(FfmpegAvailableMessage());
+            if (!UI.EditorCommands.SuppressToasts)
+            {
+                Store.Toast(FfmpegAvailableMessage());
+            }
         }, [booted]);
 
         GC.KeepAlive(revision);

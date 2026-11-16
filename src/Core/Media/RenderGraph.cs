@@ -6,27 +6,58 @@ namespace MovieDotNet.Core.Media;
 /// <summary>Options for an export run.</summary>
 public sealed class RenderSettings
 {
+    /// <summary>Gets or sets the output width in pixels.</summary>
     public int Width { get; set; } = 1920;
+
+    /// <summary>Gets or sets the output height in pixels.</summary>
     public int Height { get; set; } = 1080;
+
+    /// <summary>Gets or sets the output frame rate.</summary>
     public double Fps { get; set; } = 60;
+
+    /// <summary>Gets or sets the x264 constant-rate factor; lower is better quality.</summary>
     public int Crf { get; set; } = 20;
+
+    /// <summary>Gets or sets the x264 encoding preset.</summary>
     public string Preset { get; set; } = "veryfast";
+
+    /// <summary>Gets or sets the AAC audio bitrate.</summary>
     public string AudioBitrate { get; set; } = "192k";
+
+    /// <summary>Gets or sets the optional export start time in seconds.</summary>
     public double? Start { get; set; }
+
+    /// <summary>Gets or sets the optional export end time in seconds.</summary>
     public double? End { get; set; }
+
+    /// <summary>Gets or sets the canvas colour used to pad gaps and rotated corners.</summary>
     public string Background { get; set; } = "#05070c";
+
+    /// <summary>Gets or sets whether audio tracks are included in the export.</summary>
     public bool IncludeAudio { get; set; } = true;
 }
 
 /// <summary>A ready-to-run ffmpeg invocation plus metadata about the graph.</summary>
 public sealed class RenderPlan
 {
+    /// <summary>Gets the ffmpeg <c>-filter_complex</c> graph.</summary>
     public required string FilterGraph { get; init; }
+
+    /// <summary>Gets the input arguments before the filter graph.</summary>
     public required List<string> InputArguments { get; init; }
+
+    /// <summary>Gets the output arguments after the filter graph.</summary>
     public required List<string> OutputArguments { get; init; }
+
+    /// <summary>Gets the planned render duration in seconds.</summary>
     public required double Duration { get; init; }
+
+    /// <summary>Gets an optional warning such as missing media or an empty timeline.</summary>
     public string? Warning { get; init; }
 
+    /// <summary>Builds the complete argument list for a destination path.</summary>
+    /// <param name="outputPath">The output media path.</param>
+    /// <returns>The ffmpeg arguments in execution order.</returns>
     public string[] BuildArguments(string outputPath)
     {
         var args = new List<string> { "-progress", "pipe:1", "-nostats" };
@@ -38,9 +69,15 @@ public sealed class RenderPlan
         return [.. args];
     }
 
+    /// <summary>Quotes an argument when it contains spaces.</summary>
+    /// <param name="value">The raw argument.</param>
+    /// <returns>The quoted or original argument.</returns>
     public static string QuoteArgument(string value) =>
         value.Contains(' ') ? $"\"{value}\"" : value;
 
+    /// <summary>Formats the plan as a single command line for diagnostics.</summary>
+    /// <param name="outputPath">The output media path.</param>
+    /// <returns>The quoted command line.</returns>
     public string ToCommandLine(string outputPath) =>
         string.Join(" ", BuildArguments(outputPath).Select(QuoteArgument));
 }
@@ -57,6 +94,11 @@ public static class RenderGraph
 
     private static string F(double value) => value.ToString("0.####", Inv);
 
+    /// <summary>Builds the ffmpeg plan for a project and render settings.</summary>
+    /// <param name="document">The project to translate.</param>
+    /// <param name="settings">The requested output format.</param>
+    /// <param name="cacheDirectory">The folder used for intermediate text files and clips.</param>
+    /// <returns>A ready-to-run plan plus duration and optional warning.</returns>
     public static RenderPlan Build(ProjectDocument document, RenderSettings settings, string cacheDirectory)
     {
         var fps = settings.Fps > 1 ? settings.Fps : 30;

@@ -11,6 +11,15 @@ namespace MovieDotNet.UI;
 /// </summary>
 public static class EditorCommands
 {
+    /// <summary>
+    /// Gets whether start-up toasts are suppressed for deterministic screenshots.
+    /// </summary>
+    internal static bool SuppressToasts =>
+        Environment.GetEnvironmentVariable("MOVIEDOTNET_NO_TOAST") is "1" or "true";
+
+    /// <summary>Imports media files in the background and adds them to the bin.</summary>
+    /// <param name="store">The editor store to update.</param>
+    /// <param name="paths">Candidate files; unsupported extensions are ignored.</param>
     public static async Task ImportAsync(EditorStore store, IEnumerable<string> paths)
     {
         var list = paths
@@ -94,6 +103,8 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Generates (or reuses) the demo reel and replaces the current document.</summary>
+    /// <param name="store">The editor store to update.</param>
     public static async Task LoadDemoAsync(EditorStore store)
     {
         if (!Ffmpeg.Available)
@@ -180,7 +191,10 @@ public static class EditorCommands
                     store.Ui.SelectedClipId = clip?.Id;
                 }
 
-                store.Toast("Demo project ready — press play.");
+                if (!SuppressToasts)
+                {
+                    store.Toast("Demo project ready — press play.");
+                }
 
                 // Headless smoke test: render the demo through the same command
                 // path the UI uses.
@@ -209,6 +223,9 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Saves the project, showing the result as a toast.</summary>
+    /// <param name="store">The editor store to save.</param>
+    /// <param name="path">Destination path, or the current project path when omitted.</param>
     public static void SaveProject(EditorStore store, string? path = null)
     {
         var target = path ?? ProjectFiles.ProjectPath(store.Document.Name);
@@ -224,6 +241,9 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Loads a project file into the store.</summary>
+    /// <param name="store">The editor store to replace.</param>
+    /// <param name="path">The project file to open.</param>
     public static void OpenProject(EditorStore store, string path)
     {
         try
@@ -241,6 +261,11 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Renders the project in the background and reports progress.</summary>
+    /// <param name="store">The editor store whose document is rendered.</param>
+    /// <param name="settings">The requested output format.</param>
+    /// <param name="outputPath">Destination media path.</param>
+    /// <param name="cancellation">Cancels the render.</param>
     public static async Task RenderAsync(
         EditorStore store,
         RenderSettings settings,
@@ -304,6 +329,10 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Renders a single frame at the current playhead.</summary>
+    /// <param name="store">The editor store whose document is snapshotted.</param>
+    /// <param name="settings">The canvas format.</param>
+    /// <param name="outputPath">Destination image path.</param>
     public static async Task SnapshotAsync(EditorStore store, RenderSettings settings, string outputPath)
     {
         var (ok, message) = await ExportService.SnapshotAsync(
@@ -365,16 +394,37 @@ public static class EditorCommands
     private static bool _devicesRequested;
     private static string _cameraLabel = "Capture";
 
+    /// <summary>Gets the discovered cameras, excluding screen and window sources.</summary>
     public static IReadOnlyList<CaptureDevice> VideoDevices { get; private set; } = [];
+
+    /// <summary>Gets the visible top-level windows available for capture.</summary>
     public static IReadOnlyList<CaptureDevice> WindowDevices { get; private set; } = [];
+
+    /// <summary>Gets the screen capture sources; normally just the entire desktop.</summary>
     public static IReadOnlyList<CaptureDevice> ScreenDevices { get; private set; } = [];
+
+    /// <summary>Gets the discovered microphone devices.</summary>
     public static IReadOnlyList<CaptureDevice> AudioDevices { get; private set; } = [];
+
+    /// <summary>Gets the default screen source, or <see langword="null"/>.</summary>
     public static CaptureDevice? ScreenDevice => ScreenDevices.FirstOrDefault();
+
+    /// <summary>Gets whether the capture device enumeration has completed.</summary>
     public static bool DevicesLoaded { get; private set; }
+
+    /// <summary>Gets whether a video/screen/window capture is running.</summary>
     public static bool CameraRecording => _cameraRecorder?.IsRecording == true;
+
+    /// <summary>Gets whether an audio-only recording is running.</summary>
     public static bool MicrophoneRecording => _microphoneRecorder?.IsRecording == true;
+
+    /// <summary>Gets whether any recording is running.</summary>
     public static bool AnyRecording => CameraRecording || MicrophoneRecording;
+
+    /// <summary>Gets the elapsed time of the video/screen/window recording.</summary>
     public static TimeSpan CameraElapsed => _cameraRecorder?.Elapsed ?? TimeSpan.Zero;
+
+    /// <summary>Gets the elapsed time of the audio-only recording.</summary>
     public static TimeSpan MicrophoneElapsed => _microphoneRecorder?.Elapsed ?? TimeSpan.Zero;
 
     /// <summary>Loads the capture device list once, then re-renders the tab.</summary>
@@ -484,6 +534,8 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Clears the device cache and enumerates cameras, windows and microphones again.</summary>
+    /// <param name="store">The editor store to notify when the list arrives.</param>
     public static void RefreshCaptureDevices(EditorStore store)
     {
         _devicesRequested = false;
@@ -495,6 +547,8 @@ public static class EditorCommands
         EnsureCaptureDevices(store);
     }
 
+    /// <summary>Starts the selected screen, window or camera capture at the project canvas size.</summary>
+    /// <param name="store">The editor store that owns the capture settings.</param>
     public static void StartCamera(EditorStore store)
     {
         if (CameraRecording)
@@ -567,6 +621,8 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Stops the video/screen/window capture and ingests the recording.</summary>
+    /// <param name="store">The editor store to update with the new asset.</param>
     public static async Task StopCameraAsync(EditorStore store)
     {
         var recorder = _cameraRecorder;
@@ -596,6 +652,8 @@ public static class EditorCommands
         await IngestRecordingAsync(store, recorder.OutputPath, _cameraLabel);
     }
 
+    /// <summary>Starts an audio-only recording from the selected microphone.</summary>
+    /// <param name="store">The editor store that owns the capture settings.</param>
     public static void StartMicrophone(EditorStore store)
     {
         if (MicrophoneRecording)
@@ -635,6 +693,8 @@ public static class EditorCommands
         }
     }
 
+    /// <summary>Stops the audio-only recording and ingests it.</summary>
+    /// <param name="store">The editor store to update with the new asset.</param>
     public static async Task StopMicrophoneAsync(EditorStore store)
     {
         var recorder = _microphoneRecorder;

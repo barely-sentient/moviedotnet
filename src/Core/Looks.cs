@@ -15,6 +15,7 @@ public sealed record TransitionDefinition(
     string Xfade,
     string Motion = "fade");
 
+/// <summary>The built-in transition catalogue shared by the UI and exporter.</summary>
 public static class TransitionRegistry
 {
     private static readonly List<TransitionDefinition> Items =
@@ -61,13 +62,20 @@ public static class TransitionRegistry
         new("swap", "Swap", "Stylised", "slideup", "slideup")
     ];
 
+    /// <summary>Gets every registered transition.</summary>
     public static IReadOnlyList<TransitionDefinition> All => Items;
 
+    /// <summary>Gets the distinct transition categories in registration order.</summary>
     public static IReadOnlyList<string> Categories => Items.Select(i => i.Category).Distinct().ToList();
 
+    /// <summary>Finds a transition by id, falling back to the first entry.</summary>
+    /// <param name="id">The transition id, or <see langword="null"/>.</param>
+    /// <returns>A registered transition; never <see langword="null"/>.</returns>
     public static TransitionDefinition Get(string? id) =>
         Items.FirstOrDefault(t => t.Id == id) ?? Items[0];
 
+    /// <summary>Adds a transition when its id is not already registered.</summary>
+    /// <param name="definition">The transition to add.</param>
     public static void Register(TransitionDefinition definition)
     {
         if (Items.Any(i => i.Id == definition.Id))
@@ -78,6 +86,9 @@ public static class TransitionRegistry
         Items.Add(definition);
     }
 
+    /// <summary>Reports whether an id represents a real transition rather than a cut.</summary>
+    /// <param name="id">The transition id.</param>
+    /// <returns><see langword="true"/> for any id other than none or empty.</returns>
     public static bool IsTransition(string? id) => id is not null && id != "none";
 }
 
@@ -88,6 +99,7 @@ public sealed record EffectDefinition(
     Func<double, string> CssFilter,
     Func<double, string?> FfmpegFilter);
 
+/// <summary>The built-in colour, blur and grading effect catalogue.</summary>
 public static class EffectRegistry
 {
     private static readonly List<EffectDefinition> Items =
@@ -117,10 +129,16 @@ public static class EffectRegistry
             amount => $"vignette=angle={Fmt(Math.PI / (4 + amount * 25))}")
     ];
 
+    /// <summary>Gets every registered effect.</summary>
     public static IReadOnlyList<EffectDefinition> All => Items;
 
+    /// <summary>Finds an effect by id.</summary>
+    /// <param name="id">The effect id, or <see langword="null"/>.</param>
+    /// <returns>The matching effect, or <see langword="null"/>.</returns>
     public static EffectDefinition? Get(string? id) => Items.FirstOrDefault(e => e.Id == id);
 
+    /// <summary>Adds an effect when its id is not already registered.</summary>
+    /// <param name="definition">The effect to add.</param>
     public static void Register(EffectDefinition definition)
     {
         if (Items.Any(i => i.Id == definition.Id))
@@ -138,9 +156,11 @@ public static class EffectRegistry
 /// <summary>Named enter/exit animations shared by the preview and the exporter.</summary>
 public sealed record AnimationPreset(string Id, string Name, string Category)
 {
+    /// <summary>Gets whether this preset represents no animation.</summary>
     public bool IsNone => Id is "none" or "";
 }
 
+/// <summary>The built-in enter/exit animation catalogue.</summary>
 public static class AnimationRegistry
 {
     private static readonly List<AnimationPreset> Items =
@@ -161,8 +181,12 @@ public static class AnimationRegistry
         new("wipe", "Wipe", "Stylised")
     ];
 
+    /// <summary>Gets every registered animation preset.</summary>
     public static IReadOnlyList<AnimationPreset> All => Items;
 
+    /// <summary>Finds an animation preset by id, falling back to the first entry.</summary>
+    /// <param name="id">The animation id, or <see langword="null"/>.</param>
+    /// <returns>A registered preset; never <see langword="null"/>.</returns>
     public static AnimationPreset Get(string? id) =>
         Items.FirstOrDefault(a => a.Id == id) ?? Items[0];
 }
@@ -177,8 +201,10 @@ public readonly record struct MotionState(
     double Rotate,
     double ClipPercent)
 {
+    /// <summary>Gets the neutral state: fully opaque, unscaled and unrotated.</summary>
     public static readonly MotionState Identity = new(1, 0, 0, 1, 0, 0, 100);
 
+    /// <summary>Gets the equivalent CSS declarations for preview layers.</summary>
     public string Css => string.Concat(
         "opacity:", Motion.Fmt(Opacity), ";",
         "transform:translate(", Motion.Fmt(TranslateX), "%,", Motion.Fmt(TranslateY), "%) scale(",
@@ -187,13 +213,20 @@ public readonly record struct MotionState(
         ClipPercent < 99.99 ? $"clip-path:inset(0 {Motion.Fmt(100 - ClipPercent)}% 0 0);" : "");
 }
 
+/// <summary>Animation curves, preview state and ffmpeg expressions.</summary>
 public static class Motion
 {
     internal static string Fmt(double value) =>
         value.ToString("0.###", CultureInfo.InvariantCulture);
 
+    /// <summary>Applies a cubic ease-out curve.</summary>
+    /// <param name="t">Progress in the range 0..1.</param>
+    /// <returns>The eased progress.</returns>
     public static double EaseOut(double t) => 1 - Math.Pow(1 - Math.Clamp(t, 0, 1), 3);
 
+    /// <summary>Applies a cubic ease-in-out curve.</summary>
+    /// <param name="t">Progress in the range 0..1.</param>
+    /// <returns>The eased progress.</returns>
     public static double EaseInOut(double t)
     {
         t = Math.Clamp(t, 0, 1);
@@ -354,6 +387,10 @@ public static class Motion
         return value;
     }
 
+    /// <summary>Builds the ffmpeg alpha expression for a clip's fades.</summary>
+    /// <param name="clip">The clip whose enter/exit fades are evaluated.</param>
+    /// <param name="fps">The output frame rate.</param>
+    /// <returns>An ffmpeg expression for the <c>alpha</c> option.</returns>
     public static string AlphaExpression(Clip clip, double fps)
     {
         var start = clip.Start;
@@ -377,6 +414,9 @@ public static class Motion
         return expression;
     }
 
+    /// <summary>Formats a number for an ffmpeg expression using the invariant culture.</summary>
+    /// <param name="value">The number to format.</param>
+    /// <returns>The formatted value.</returns>
     public static string Float(double value) =>
         value.ToString("0.####", CultureInfo.InvariantCulture);
 }

@@ -10,6 +10,13 @@ advanced controls behind progressive disclosure, so the first screen stays calm.
 FFmpeg does the media work: probing, poster frames, filmstrips, waveforms and the
 final render.
 
+## Documentation
+
+The full feature guide, capture and export notes, window/mobile behaviour,
+architecture and screenshots live in [`docs/`](docs/README.md). Start with
+[docs/getting-started.md](docs/getting-started.md) for requirements and the
+first-run flow.
+
 ## Features
 
 - **Media bin** with thumbnail posters, duration and resolution, an in-app file

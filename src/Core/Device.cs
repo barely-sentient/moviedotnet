@@ -8,6 +8,7 @@ namespace MovieDotNet.Core;
 /// </summary>
 public static class Device
 {
+    /// <summary>Gets whether the single-page phone shell should be used.</summary>
     public static bool Mobile =>
         Host.IsMobile
         || Environment.GetEnvironmentVariable("MOVIEDOTNET_MOBILE") is "1" or "true";

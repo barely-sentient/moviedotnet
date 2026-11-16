@@ -7,6 +7,7 @@ namespace MovieDotNet.Core.Media;
 /// </summary>
 public static class DemoProject
 {
+    /// <summary>Gets the folder where generated demo clips and music are cached.</summary>
     public static string Directory { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "MovieDotNet",
@@ -19,6 +20,10 @@ public static class DemoProject
         ("Ocean run", 7.0, "hue=h=120:s=1.3", "03 / OCEAN")
     ];
 
+    /// <summary>Builds the demo project, generating any missing media with ffmpeg.</summary>
+    /// <param name="log">Optional progress callback for the busy pill.</param>
+    /// <param name="cancellation">Cancels generation and analysis.</param>
+    /// <returns>A project containing three scenes, a music bed and titles.</returns>
     public static async Task<ProjectDocument> BuildAsync(Action<string>? log = null, CancellationToken cancellation = default)
     {
         System.IO.Directory.CreateDirectory(Directory);

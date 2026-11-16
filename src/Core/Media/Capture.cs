@@ -33,13 +33,28 @@ public sealed partial class CaptureRecorder : IDisposable
         StartedAt = DateTime.Now;
     }
 
+    /// <summary>Gets the destination recording path.</summary>
     public string OutputPath { get; }
+
+    /// <summary>Gets whether this recording includes a video stream.</summary>
     public bool HasVideo { get; }
+
+    /// <summary>Gets the local time at which recording started.</summary>
     public DateTime StartedAt { get; }
+
+    /// <summary>Gets the elapsed recording time.</summary>
     public TimeSpan Elapsed => DateTime.Now - StartedAt;
+
+    /// <summary>Gets whether the ffmpeg process is still running.</summary>
     public bool IsRecording => !_process.HasExited;
+
+    /// <summary>Gets a task that completes when ffmpeg exits.</summary>
     public Task Completion => _exited.Task;
+
+    /// <summary>Gets the ffmpeg exit code, or <c>-1</c> while it is running.</summary>
     public int ExitCode => _process.HasExited ? _process.ExitCode : -1;
+
+    /// <summary>Gets the captured ffmpeg diagnostic log.</summary>
     public string Log => _log.ToString();
 
     [GeneratedRegex("\"(?<name>.+)\"\\s+\\((?<kind>video|audio)\\)")]
