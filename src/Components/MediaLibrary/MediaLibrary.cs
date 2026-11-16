@@ -686,6 +686,9 @@ public sealed class MediaLibrary : Component
         var width = store.Document.Width;
         var height = store.Document.Height;
         var fps = Math.Clamp((int)Math.Round(store.Document.Fps), 24, 60);
+        var captureNote = Device.Mobile
+            ? "Capture is Windows-only. Editing and playback still work on this build."
+            : "Capture is Windows-only. With FFmpeg installed, this build can still open, edit, play and render projects.";
 
         Node SourceTab(string id, string icon, string label)
         {
@@ -788,11 +791,17 @@ public sealed class MediaLibrary : Component
         microphoneOptions.AddRange(microphones.Select(d => (d.Name, d.Name)));
 
         return F(
-            Div(new() { ClassName = "panel-note" },
-                H("i", new Props { ClassName = "fa-solid fa-circle-info" }),
-                Span(new(), Text(Ffmpeg.Available
-                    ? $"Record your screen, a window or a camera. Captures fit the {width}×{height} canvas and land in the bin."
-                    : "Recording needs FFmpeg on a desktop host. Playback and editing still work."))),
+            Show(OperatingSystem.IsWindows(),
+                Div(new() { ClassName = "panel-note" },
+                    H("i", new Props { ClassName = "fa-solid fa-circle-info" }),
+                    Span(new(), Text(Ffmpeg.Available
+                        ? $"Record your screen, a window or a camera. Captures fit the {width}×{height} canvas and land in the bin."
+                        : "Recording needs FFmpeg on a desktop host. Playback and editing still work.")))),
+
+            Show(!OperatingSystem.IsWindows(),
+                Div(new() { ClassName = "panel-note" },
+                    H("i", new Props { ClassName = "fa-solid fa-laptop" }),
+                    Span(new(), Text(captureNote)))),
 
             Div(new() { ClassName = "record-block" },
                 Div(new() { ClassName = "field-label" }, Text("Capture source")),

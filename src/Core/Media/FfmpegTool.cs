@@ -43,13 +43,17 @@ public sealed record MediaInfo(
 
 /// <summary>
 /// Locates and drives the ffmpeg/ffprobe binaries. Both are looked up next to the
-/// application, in a tools folder, in the winget package cache and finally on
-/// PATH, so a normal install is picked up without configuration.
+/// application, in a tools folder, in platform package-manager locations
+/// (including the Winget cache) and finally on <c>PATH</c>, so a normal install is
+/// picked up without configuration.
 /// </summary>
 public static class Ffmpeg
 {
-    private static readonly Lazy<string?> ResolvedFfmpeg = new(() => Resolve("ffmpeg.exe"));
-    private static readonly Lazy<string?> ResolvedFfprobe = new(() => Resolve("ffprobe.exe"));
+    private static string FfmpegFileName => OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
+    private static string FfprobeFileName => OperatingSystem.IsWindows() ? "ffprobe.exe" : "ffprobe";
+
+    private static readonly Lazy<string?> ResolvedFfmpeg = new(() => Resolve(FfmpegFileName));
+    private static readonly Lazy<string?> ResolvedFfprobe = new(() => Resolve(FfprobeFileName));
 
     /// <summary>Gets the resolved ffmpeg executable path, or <see langword="null"/>.</summary>
     public static string? Exe => ResolvedFfmpeg.Value;
@@ -73,7 +77,7 @@ public static class Ffmpeg
     {
         foreach (var path in ToolDirectories())
         {
-            var exe = Path.Combine(path, "ffmpeg.exe");
+            var exe = Path.Combine(path, FfmpegFileName);
 
             if (File.Exists(exe))
             {
@@ -98,6 +102,16 @@ public static class Ffmpeg
         yield return Path.Combine(AppContext.BaseDirectory, "tools", "ffmpeg", "bin");
         yield return Path.Combine(Directory.GetCurrentDirectory(), "tools", "ffmpeg", "bin");
         yield return Path.Combine(Directory.GetCurrentDirectory(), "tools");
+
+        if (!OperatingSystem.IsWindows())
+        {
+            // Common package-manager locations when PATH is minimal.
+            yield return "/usr/bin";
+            yield return "/usr/local/bin";
+            yield return "/opt/homebrew/bin";
+            yield return "/opt/local/bin";
+        }
+
         yield return @"C:\ffmpeg\bin";
         yield return @"C:\Program Files\ffmpeg\bin";
 

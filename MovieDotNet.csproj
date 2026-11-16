@@ -13,15 +13,30 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);builds/**</DefaultItemExcludes>
 
     <!--
-      The editor uses Host.Post/FrameTick, which are part of the local framework
-      checkout while they land upstream. Point DonkehRoot at a different
-      checkout, or set UseLocalDonkeh=false to build against the NuGet package
-      once the API is released.
+      NuGet is the default path. Developers can still build against the local
+      Donkeh checkout with -p:UseLocalDonkeh=true when DonkehRoot exists.
     -->
     <DonkehRoot Condition="'$(DonkehRoot)' == ''">$(MSBuildProjectDirectory)\..\UI Framework\CSS-Engine\Donkeh</DonkehRoot>
-    <UseLocalDonkeh Condition="'$(UseLocalDonkeh)' == '' and Exists('$(DonkehRoot)\Build\Donkeh.props')">true</UseLocalDonkeh>
+    <UseLocalDonkeh Condition="'$(UseLocalDonkeh)' == ''">false</UseLocalDonkeh>
     <DonkehDesktop>true</DonkehDesktop>
-    <DonkehAndroid>true</DonkehAndroid>
+    <!-- Opt in with -p:DonkehAndroid=true; desktop builds stay workload-free. -->
+    <DonkehAndroid Condition="'$(DonkehAndroid)' == ''">false</DonkehAndroid>
+
+    <!--
+      Pick the native LibVLC package by target runtime. Linux uses the distro's
+      libvlc (there is no official Linux NuGet native package); macOS and Windows
+      get their bundled native runtimes.
+    -->
+    <MovieDotNetVlcPlatform Condition="'$(RuntimeIdentifier)' == 'win-x64'
+        or ('$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows')))">windows</MovieDotNetVlcPlatform>
+    <MovieDotNetVlcPlatform Condition="'$(RuntimeIdentifier)' == 'osx-x64'
+        or '$(RuntimeIdentifier)' == 'osx-arm64'
+        or ('$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('OSX')))">mac</MovieDotNetVlcPlatform>
+
+    <!-- Copy only the native tree used by the x64 release, not all three. -->
+    <VlcWindowsX64Enabled Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled Condition="'$(RuntimeIdentifier)' == 'win-x64'">false</VlcWindowsX86Enabled>
+    <VlcWindowsArm64Enabled Condition="'$(RuntimeIdentifier)' == 'win-x64'">false</VlcWindowsArm64Enabled>
 
     <!-- The Android SDK targets need a JDK; reuse the one the SDK installer placed. -->
     <JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and Exists('$(LOCALAPPDATA)\Android\Jdk')">$(LOCALAPPDATA)\Android\Jdk</JavaSdkDirectory>
@@ -35,17 +50,26 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseLocalDonkeh)' != 'true'">
-    <TargetFramework>net10.0</TargetFramework>
-    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.30</DonkehVersion>
+    <!--
+      The NuGet path must opt into Android explicitly. In local mode the
+      Donkeh.props import supplies DonkehTargetFrameworks instead.
+    -->
+    <TargetFrameworks Condition="'$(DonkehAndroid)' == 'true'">net10.0;net10.0-android</TargetFrameworks>
+    <TargetFramework Condition="'$(DonkehAndroid)' != 'true'">net10.0</TargetFramework>
+    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.31</DonkehVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseLocalDonkeh)' != 'true'">
     <PackageReference Include="Donkeh.Windowing" Version="$(DonkehVersion)" />
   </ItemGroup>
 
-  <!-- Native LibVLC so preview playback works without a system VLC install. -->
-  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-android'">
+  <!-- Native LibVLC so preview playback works without a separate VLC install. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-android' and '$(MovieDotNetVlcPlatform)' == 'windows'">
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-android' and '$(MovieDotNetVlcPlatform)' == 'mac'">
+    <PackageReference Include="VideoLAN.LibVLC.Mac" Version="3.1.3.2" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">

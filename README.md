@@ -1,7 +1,8 @@
 # MovieDotNet
 
-A desktop, non-linear video editor built with [Donkeh](https://barely-sentient.github.io/donkeh-ui)
-(real CSS, GPU layout/paint, native desktop host) and FFmpeg.
+A cross-platform, non-linear video editor built with
+[Donkeh](https://barely-sentient.github.io/donkeh-ui) (real CSS, GPU
+layout/paint, native desktop and Android hosts) and FFmpeg.
 
 The UI is entirely C# + CSS: timeline, program monitor, inspector, media bin and
 a Looks workspace for transitions, effects and motion presets. The shell is built
@@ -9,6 +10,16 @@ around five rail destinations (Media, Text, Audio, Record, Looks) and keeps
 advanced controls behind progressive disclosure, so the first screen stays calm.
 FFmpeg does the media work: probing, poster frames, filmstrips, waveforms and the
 final render.
+
+## Download
+
+[**Download the latest MovieDotNet release**](https://github.com/barely-sentient/moviedotnet/releases/latest) **— requires .NET 10 Runtime** for desktop.
+
+Releases include Windows x64, Linux x64, macOS Intel, macOS Apple silicon and a
+sideloadable Android APK. Install the
+[.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) for desktop
+builds; FFmpeg is also required. Linux additionally needs the distro `libvlc`
+package. See [docs/getting-started.md](docs/getting-started.md).
 
 ## Documentation
 
@@ -65,16 +76,18 @@ first-run flow.
 
 ## Requirements
 
-- .NET SDK 10.
+- .NET SDK 10 for source builds, or the **.NET 10 Runtime** for release builds.
 - **FFmpeg** and **ffprobe** on `PATH` (or next to the app / in `tools/ffmpeg`).
-  On Windows: `winget install Gyan.FFmpeg`. The app detects common install
+  On Windows: `winget install Gyan.FFmpeg`; on macOS: `brew install ffmpeg`; on
+  Debian/Ubuntu: `sudo apt install ffmpeg`. The app detects common install
   locations and shows status in the title bar and Project setup panel.
-- A GPU with OpenGL 3.3 (Donkeh desktop host).
-- LibVLC is shipped with the app through `VideoLAN.LibVLC.Windows` on desktop and
-  `VideoLAN.LibVLC.Android` on Android; no system VLC install is required.
+- A GPU with OpenGL 3.3 on desktop.
+- **LibVLC** — bundled on Windows and macOS through
+  `VideoLAN.LibVLC.Windows` / `VideoLAN.LibVLC.Mac`; install the distro `libvlc`
+  package on Linux. Android uses `VideoLAN.LibVLC.Android`.
 - **Android** (optional): the .NET Android workload, an Android SDK and a JDK.
   The project picks up `%LOCALAPPDATA%\Android\Sdk` and `%LOCALAPPDATA%\Android\Jdk`
-  automatically when they exist.
+  automatically on Windows.
 
 ## Run
 
@@ -82,7 +95,8 @@ first-run flow.
 dotnet run -f net10.0
 ```
 
-The project multi-targets desktop and Android, so the framework is required.
+The project references `Donkeh.Windowing` from NuGet and builds desktop by
+default. Add the Android target with `-p:DonkehAndroid=true`.
 
 Useful development switches:
 
@@ -201,13 +215,14 @@ named presets resolved by `Motion.For(clip, clipTime)` in the preview and by
 
 ## Building against a local framework checkout
 
-The editor needs `Host.Post`/`Host.FrameTick` (see
-[`docs/framework-changes.md`](docs/framework-changes.md)). By default the project
-imports the framework at `..\UI Framework\CSS-Engine\Donkeh`. Override it with:
+The editor references **`Donkeh.Windowing` 1.0.31** from NuGet. The framework
+changes it relies on are documented in
+[`docs/framework-changes.md`](docs/framework-changes.md).
+
+To work on the framework itself, build against a checkout:
 
 ```powershell
-dotnet build -p:DonkehRoot="C:\path\to\Donkeh"
+dotnet build -p:UseLocalDonkeh=true -p:DonkehRoot="C:\path\to\Donkeh"
 ```
 
-Once the framework release containing those APIs is published, set
-`-p:UseLocalDonkeh=false` to build against the NuGet package instead.
+NuGet is the default; omit both switches for a normal build.

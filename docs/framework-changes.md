@@ -1,10 +1,11 @@
 # Framework changes used by MovieDotNet
 
-These are the edits made to the local Donkeh checkout while building the editor.
-They are small and self-contained; everything else uses the published API.
+MovieDotNet depends on **`Donkeh.Windowing` 1.0.31** from NuGet. The edits
+below landed in that package while building the editor; they are recorded here
+because the editor relies on them. Everything else uses the published API.
 
-The project points `DonkehRoot` at `..\UI Framework\CSS-Engine\Donkeh` and builds
-against the local `Donkeh.sln` through `UseLocalDonkeh`.
+The app builds against NuGet by default. To work on the framework itself, point
+`DonkehRoot` at a `Donkeh` checkout and pass `-p:UseLocalDonkeh=true`.
 
 ## 1. `Host.Post` — marshal worker results onto the frame thread
 
@@ -143,5 +144,6 @@ which parts of the bar move the window.
   `VideoProps`/`VideoHost`, `CanvasProps`, `Stylesheet`, `Image`, `AppRoot`.
 - The desktop host's `--screenshot` flag and the app's `MOVIEDOTNET_*` switches
   are what the smoke tests use.
-- If these changes are folded upstream, the app only needs `DonkehRoot` switched
-  back to NuGet; no app code changes.
+- These changes are part of `Donkeh.Windowing` 1.0.31. For further framework
+  work, build against the local checkout with `UseLocalDonkeh=true`; when the
+  change ships, bump `DonkehVersion` and return to NuGet.

@@ -43,8 +43,8 @@ The phone layout shows one page at a time:
 
 A bottom navigation bar switches pages. The preview canvas is sized in viewport
 units, the timeline uses compact track rows and the inspector collapses to one
-column. Import, recording, analysis and render are desktop-only because they
-depend on FFmpeg and ffprobe.
+column. Import, analysis and render need FFmpeg and are unavailable on Android;
+recording is Windows-only.
 
 ## Window actions
 

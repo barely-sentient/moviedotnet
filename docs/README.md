@@ -1,11 +1,13 @@
 # MovieDotNet documentation
 
-MovieDotNet is a desktop non-linear video editor built with the
+MovieDotNet is a cross-platform non-linear video editor built with the
 [Donkeh](https://barely-sentient.github.io/donkeh-ui) UI framework and FFmpeg.
-The UI is C# + CSS; FFmpeg does probing, thumbnails, waveforms, capture and the
-final render.
+The UI is C# + CSS; FFmpeg does probing, thumbnails, waveforms, Windows capture
+and the final render.
 
 ![MovieDotNet editor overview](images/editor-overview.png)
+
+[**Download the latest release**](https://github.com/barely-sentient/moviedotnet/releases/latest) **— requires .NET 10 Runtime** for desktop. Windows, Linux, macOS and Android assets are published together.
 
 ## What it does
 
@@ -17,8 +19,8 @@ final render.
   **More controls** for timing, rotation, motion, transitions and effects.
 - Drag and drop from the media bin, audio list or title presets onto any
   timeline lane.
-- Screen, window, camera and microphone capture through FFmpeg, fitted to the
-  project canvas.
+- Screen, window, camera and microphone capture on Windows through FFmpeg,
+  fitted to the project canvas.
 - A frameless desktop window with a custom title bar and native window controls.
 - Export to H.264/AAC MP4 with resolution and frame-rate presets, CRF quality,
   progress, cancellation and an FFmpeg log.
@@ -33,7 +35,7 @@ final render.
 | [Export](export.md) | Render settings, codecs, progress, frame snapshots and output folders. |
 | [Window and mobile](window-and-mobile.md) | Frameless desktop chrome and the Android phone shell. |
 | [Architecture](architecture.md) | Store, undo, threading, FFmpeg pipeline, render graph and framework integration. |
-| [Framework changes](framework-changes.md) | Local Donkeh checkout changes used by the app. |
+| [Framework changes](framework-changes.md) | Donkeh changes shipped in the NuGet dependency the app uses. |
 | [Troubleshooting](troubleshooting.md) | Missing FFmpeg, capture problems, render failures and platform limits. |
 | [Screenshots](screenshots.md) | The visual tour and where each screen appears. |
 
@@ -47,7 +49,7 @@ final render.
 | Project files | `Documents/MovieDotNet/Projects/*.mdproj` |
 | Renders | `Documents/MovieDotNet/Renders` |
 | Recordings | `Documents/MovieDotNet/Recordings` |
-| Media derivatives cache | `%LOCALAPPDATA%/MovieDotNet/cache` |
+| Media derivatives cache | `<local app data>/MovieDotNet/cache` |
 
 ## Quick start
 

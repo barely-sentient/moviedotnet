@@ -1,0 +1,206 @@
+name: Release
+
+# Every push to master builds and publishes a new cross-platform release.
+# The version is derived from the workflow run number, so no version commit is
+# needed and the workflow cannot trigger itself.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Compute version
+        id: version
+        shell: bash
+        run: |
+          version="1.0.${GITHUB_RUN_NUMBER}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Release version: ${version}"
+
+  desktop:
+    name: Desktop ${{ matrix.name }}
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            name: windows-x64
+            archive: zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            name: linux-x64
+            archive: tar.gz
+          - os: macos-15-intel
+            rid: osx-x64
+            name: macos-x64
+            archive: tar.gz
+          - os: macos-15
+            rid: osx-arm64
+            name: macos-arm64
+            archive: tar.gz
+
+    steps:
+      - name: Checkout MovieDotNet
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish desktop
+        shell: pwsh
+        run: |
+          dotnet publish MovieDotNet.csproj `
+            -c Release `
+            -f net10.0 `
+            -r ${{ matrix.rid }} `
+            --self-contained false `
+            -p:TargetFrameworks=net10.0 `
+            -p:Version="${{ needs.prepare.outputs.version }}" `
+            -o publish
+
+      - name: Package desktop
+        shell: pwsh
+        run: |
+          $version = "${{ needs.prepare.outputs.version }}"
+          $name = "${{ matrix.name }}"
+
+          if ("${{ matrix.archive }}" -eq "zip") {
+            $archive = "MovieDotNet-$version-$name.zip"
+            Compress-Archive -Path publish/* -DestinationPath $archive -Force
+          }
+          else {
+            $archive = "MovieDotNet-$version-$name.tar.gz"
+            tar -czf $archive -C publish .
+          }
+
+          Write-Host "Created $archive ($([math]::Round((Get-Item $archive).Length / 1MB, 1)) MB)"
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.name }}
+          path: |
+            MovieDotNet-*.zip
+            MovieDotNet-*.tar.gz
+          if-no-files-found: error
+
+  android:
+    name: Android APK
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout MovieDotNet
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install Android workload
+        shell: bash
+        run: dotnet workload install android
+
+      - name: Publish APK
+        shell: bash
+        run: |
+          dotnet publish MovieDotNet.csproj \
+            -c Release \
+            -f net10.0-android \
+            -p:DonkehAndroid=true \
+            -p:TargetFrameworks=net10.0-android \
+            -p:AndroidPackageFormat=apk \
+            -p:AndroidSdkDirectory="$ANDROID_HOME" \
+            -p:JavaSdkDirectory="$JAVA_HOME" \
+            -p:ApplicationVersion=${{ github.run_number }} \
+            -p:ApplicationDisplayVersion="${{ needs.prepare.outputs.version }}" \
+            -p:Version="${{ needs.prepare.outputs.version }}" \
+            -o publish-android
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          version="${{ needs.prepare.outputs.version }}"
+          apk="$(find publish-android bin/Release/net10.0-android -name '*.apk' -type f -print -quit 2>/dev/null || true)"
+          test -n "$apk"
+          cp "$apk" "MovieDotNet-${version}-android.apk"
+          echo "Using $apk"
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: MovieDotNet-*.apk
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    needs: [prepare, desktop, android]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: MovieDotNet v${{ needs.prepare.outputs.version }}
+          generate_release_notes: true
+          body: |
+            **MovieDotNet v${{ needs.prepare.outputs.version }}**
+
+            Desktop builds are framework-dependent — **(requires .NET 10 Runtime)** and FFmpeg.
+            Capture is Windows-only; Linux and macOS edit, play and render.
+
+            - **Windows x64** — `.zip`, bundled LibVLC
+            - **Linux x64** — `.tar.gz`, requires the distro `libvlc` package
+            - **macOS x64 / Apple silicon** — `.tar.gz`, bundled LibVLC
+            - **Android** — sideloadable debug-signed `.apk` (editing and playback); uninstall an older build if the signature differs
+
+            - [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
+            - [FFmpeg](https://ffmpeg.org/download.html) on PATH, or set `MOVIEDOTNET_FFMPEG`.
+          files: artifacts/*

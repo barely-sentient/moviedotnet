@@ -6,6 +6,9 @@ The **Record** rail records a screen, a window, a camera or a microphone through
 FFmpeg. Every video capture is fitted to the project canvas before it lands in
 the bin.
 
+> Capture is Windows-only. The Linux and macOS builds can open, edit, play and
+> render projects, but the Record rail has no capture devices there.
+
 ## Sources
 
 | Source | What it records | Notes |
@@ -72,5 +75,7 @@ added to the bin.
 - **Virtual cameras.** Camera enumeration lists DirectShow devices. Virtual
   cameras that do not expose a usable DirectShow stream will fail with an FFmpeg
   error in the toast/log.
+- **Linux and macOS.** Recording uses Windows `gdigrab` and DirectShow; those
+  hosts can edit, play and render but have no capture devices.
 - **Mobile.** FFmpeg and ffprobe are desktop executables; recording, import and
   render stay desktop features. Android can open projects, play and edit.

@@ -11,18 +11,29 @@ status. If FFmpeg or ffprobe is missing:
    winget install Gyan.FFmpeg
    ```
 
-2. Or place `ffmpeg.exe` and `ffprobe.exe` next to the app, in
-   `tools/ffmpeg`, or in `tools/ffmpeg/bin`.
+   ```bash
+   brew install ffmpeg          # macOS
+   sudo apt install ffmpeg      # Debian/Ubuntu
+   ```
+
+2. Or place `ffmpeg`/`ffprobe` (`ffmpeg.exe`/`ffprobe.exe` on Windows) next to
+   the app, in `tools/ffmpeg`, or in `tools/ffmpeg/bin`.
 3. Or point the app at an existing binary:
 
    ```powershell
    $env:MOVIEDOTNET_FFMPEG = "C:\ffmpeg\bin\ffmpeg.exe"
    ```
 
+   ```bash
+   export MOVIEDOTNET_FFMPEG=/usr/bin/ffmpeg
+   ```
+
 4. Restart the app or press **Refresh** in the setup panel.
 
 The app searches the application folder, `tools`, the Winget package cache,
-`C:\ffmpeg\bin`, `C:\Program Files\ffmpeg\bin` and `PATH`.
+`PATH`, and the common package-manager locations (`/usr/bin`, `/usr/local/bin`,
+`/opt/homebrew/bin`, `/opt/local/bin`). It also checks `C:\ffmpeg\bin` and
+`C:\Program Files\ffmpeg\bin` on Windows.
 
 ## Import fails or a file is missing from the bin
 
@@ -34,6 +45,8 @@ The app searches the application folder, `tools`, the Winget package cache,
 
 ## A camera does not appear or fails immediately
 
+- Capture is Windows-only. Linux and macOS builds can open, edit, play and
+  render, but the Record rail has no capture devices there.
 - Camera enumeration uses DirectShow. Virtual cameras that do not expose a
   usable DirectShow video stream will fail.
 - Try a physical camera, or use **Screen**/**Window** capture instead.
@@ -88,4 +101,4 @@ FFmpeg and ffprobe are desktop executables. On Android:
 | `MOVIEDOTNET_NO_TOAST=1` | Suppress start-up toasts for clean screenshots. |
 
 `dotnet run -f net10.0 -- --screenshot <path>` renders 120 frames and writes a
-BMP for visual smoke tests.
+BMP for visual smoke tests. The recording switches are Windows-only.
