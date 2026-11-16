@@ -49,6 +49,10 @@ final render.
 - **Export** — resolution presets, CRF quality, progress, cancel, ffmpeg log, and
   a filter graph built from the timeline (xfade chain, overlays, drawtext, audio
   mix). A frame snapshot button renders the current frame through the same graph.
+- **Frameless window** — the native frame is hidden (`AppRoot(Frameless = true)`)
+  and the app draws its own title bar. Drag the bar to move the window; the
+  minimise, maximise/restore and close buttons sit at the right. Rounded desktop
+  corners square off automatically when maximized.
 - **Projects** — save/open JSON projects (`*.mdproj`) in Documents/MovieDotNet.
 
 ## Requirements

@@ -62,7 +62,19 @@ html, body {
     width: 100vw;
     height: 100vh;
     background-image: linear-gradient(180deg, #0c0e14 0%, #0a0c11 100%);
+    border-radius: 16px;
+    overflow: hidden;
     color: var(--text);
+}
+
+/* Phones are full-screen; the desktop frameless window alone is rounded. */
+.app.is-mobile {
+    border-radius: 0;
+}
+
+/* A maximized window fills the screen; square corners are expected there. */
+.app.is-maximized {
+    border-radius: 0;
 }
 
 .app-titlebar {

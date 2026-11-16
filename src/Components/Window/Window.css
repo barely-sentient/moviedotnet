@@ -1,0 +1,57 @@
+.app-window {
+    display: block;
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+.window-controls,
+.window-control {
+    app-region: no-drag;
+}
+
+.window-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+}
+
+.window-divider {
+    flex: none;
+    width: 1px;
+    height: 20px;
+    margin: 0 2px;
+    background-color: var(--line);
+}
+
+.window-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background-color: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.window-control:hover {
+    background-color: var(--card);
+    border-color: var(--line);
+    color: var(--text);
+}
+
+.window-control.is-close:hover {
+    background-color: #3a2028;
+    border-color: #5a2b35;
+    color: #ffb3bf;
+}
+
+.window-control i {
+    pointer-events: none;
+}

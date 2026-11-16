@@ -1,5 +1,6 @@
 using Donkeh.Hosting;
 using Donkeh.UILab;
+using Donkeh.Windowing;
 using MovieDotNet.Components;
 using MovieDotNet.Core;
 using static Donkeh.UILab.HtmlHelper;
@@ -9,7 +10,7 @@ using static Donkeh.UILab._;
 
 namespace MovieDotNet;
 
-[AppRoot(Width = 1600, Height = 980, Title = "MovieDotNet — Video Editor")]
+[AppRoot(Width = 1600, Height = 980, Title = "MovieDotNet — Video Editor", Frameless = true)]
 public sealed class App : Component
 {
     private static readonly EditorStore Store = EditorStore.CreateNew();
@@ -135,9 +136,13 @@ public sealed class App : Component
 
         var mobile = Device.Mobile;
 
+        var appClass = mobile
+            ? "app is-mobile"
+            : WindowChrome.IsMaximized ? "app is-maximized" : "app";
+
         return Provider(EditorContext.Store, Store,
-            Div(new() { ClassName = mobile ? "app is-mobile" : "app" },
-                C<TitleBar>(),
+            Div(new() { ClassName = appClass },
+                C<Window>(),
                 mobile ? MobileShell(Store) : DesktopShell(),
                 Show(Store.Ui.ShowExport, C<ExportDialog>()),
                 Show(Store.Ui.ShowBrowser, C<MediaBrowser>()),

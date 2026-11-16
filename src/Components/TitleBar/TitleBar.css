@@ -1,3 +1,17 @@
+.app-titlebar {
+    app-region: drag;
+}
+
+.app-titlebar .project-block,
+.app-titlebar .project-name,
+.app-titlebar .title-actions,
+.app-titlebar .icon-button,
+.app-titlebar .btn,
+.app-titlebar .window-controls,
+.app-titlebar .status-dot {
+    app-region: no-drag;
+}
+
 .brand {
     display: flex;
     align-items: center;

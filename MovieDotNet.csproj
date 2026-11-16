@@ -60,6 +60,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="src/Components/TitleBar/TitleBar.css" />
+    <EmbeddedResource Include="src/Components/Window/Window.css" />
     <EmbeddedResource Include="src/Components/IconButton/IconButton.css" />
     <EmbeddedResource Include="src/Components/MediaLibrary/MediaLibrary.css" />
     <EmbeddedResource Include="src/Components/PreviewMonitor/PreviewMonitor.css" />

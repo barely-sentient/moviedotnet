@@ -114,7 +114,9 @@ public sealed class TitleBar : Component
                     }
                 },
                     H("i", new Props { ClassName = "fa-solid fa-arrow-up-from-bracket" }),
-                    Text("Render"))));
+                    Text("Render")),
+                Div(new() { ClassName = "window-divider" }),
+                C<WindowControls>()));
     }
 
     private static Node MobileBar(EditorStore store) =>
