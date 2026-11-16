@@ -43,6 +43,11 @@
     <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' and Exists('$(LOCALAPPDATA)\Android\Sdk')">$(LOCALAPPDATA)\Android\Sdk</AndroidSdkDirectory>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
+    <ApplicationId>com.barelysentient.moviedotnet</ApplicationId>
+    <ApplicationTitle>MovieDotNet</ApplicationTitle>
+  </PropertyGroup>
+
   <Import Project="$(DonkehRoot)\Build\Donkeh.props" Condition="'$(UseLocalDonkeh)' == 'true'" />
 
   <PropertyGroup Condition="'$(UseLocalDonkeh)' == 'true'">

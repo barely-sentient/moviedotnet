@@ -152,6 +152,8 @@ jobs:
             -p:DonkehAndroid=true \
             -p:TargetFrameworks=net10.0-android \
             -p:AndroidPackageFormat=apk \
+            -p:AndroidUseApkSigner=true \
+            -p:AndroidCreatePackagePerAbi=false \
             -p:AndroidSdkDirectory="$ANDROID_HOME" \
             -p:JavaSdkDirectory="$JAVA_HOME" \
             -p:ApplicationVersion=${{ github.run_number }} \
@@ -159,12 +161,16 @@ jobs:
             -p:Version="${{ needs.prepare.outputs.version }}" \
             -o publish-android
 
-      - name: Collect APK
+      - name: Collect and verify APK
         shell: bash
         run: |
           version="${{ needs.prepare.outputs.version }}"
-          apk="$(find publish-android bin/Release/net10.0-android -name '*.apk' -type f -print -quit 2>/dev/null || true)"
+          # -o can copy the unsigned intermediate; always publish the signed APK.
+          apk="$(find publish-android bin/Release/net10.0-android -name '*-Signed.apk' -type f -print -quit 2>/dev/null || true)"
           test -n "$apk"
+          sdk="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          "$sdk/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          unzip -l "$apk" | grep -q 'AndroidManifest.xml'
           cp "$apk" "MovieDotNet-${version}-android.apk"
           echo "Using $apk"
 
@@ -197,7 +203,7 @@ jobs:
             "MovieDotNet-${version}-macos-x64.tar.gz" \
             "MovieDotNet-${version}-macos-arm64.tar.gz" \
             "MovieDotNet-${version}-android.apk"; do
-            test -f "artifacts/$asset"
+            test -s "artifacts/$asset"
           done
           ls -lh artifacts
 

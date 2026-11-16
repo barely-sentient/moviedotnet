@@ -84,6 +84,8 @@ FFmpeg and ffprobe are desktop executables. On Android:
 - Projects can be opened, played and edited.
 - The title bar and inspector use the phone shell; there are no desktop window
   controls.
+- If Android reports an invalid package, download the APK from the latest
+  release again. CI verifies the APK signature before publishing it.
 
 ## Useful test switches
 
