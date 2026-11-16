@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MovieDotNet</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <!-- Show(...) yields Node? and background commands are intentionally not awaited. -->
+    <NoWarn>$(NoWarn);CS8604;CS4014;CS8602</NoWarn>
+    <DefaultItemExcludes>$(DefaultItemExcludes);builds/**</DefaultItemExcludes>
+
+    <!--
+      The editor uses Host.Post/FrameTick, which are part of the local framework
+      checkout while they land upstream. Point DonkehRoot at a different
+      checkout, or set UseLocalDonkeh=false to build against the NuGet package
+      once the API is released.
+    -->
+    <DonkehRoot Condition="'$(DonkehRoot)' == ''">$(MSBuildProjectDirectory)\..\UI Framework\CSS-Engine\Donkeh</DonkehRoot>
+    <UseLocalDonkeh Condition="'$(UseLocalDonkeh)' == '' and Exists('$(DonkehRoot)\Build\Donkeh.props')">true</UseLocalDonkeh>
+    <DonkehDesktop>true</DonkehDesktop>
+    <DonkehAndroid>true</DonkehAndroid>
+
+    <!-- The Android SDK targets need a JDK; reuse the one the SDK installer placed. -->
+    <JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and Exists('$(LOCALAPPDATA)\Android\Jdk')">$(LOCALAPPDATA)\Android\Jdk</JavaSdkDirectory>
+    <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' and Exists('$(LOCALAPPDATA)\Android\Sdk')">$(LOCALAPPDATA)\Android\Sdk</AndroidSdkDirectory>
+  </PropertyGroup>
+
+  <Import Project="$(DonkehRoot)\Build\Donkeh.props" Condition="'$(UseLocalDonkeh)' == 'true'" />
+
+  <PropertyGroup Condition="'$(UseLocalDonkeh)' == 'true'">
+    <TargetFrameworks>$(DonkehTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseLocalDonkeh)' != 'true'">
+    <TargetFramework>net10.0</TargetFramework>
+    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.30</DonkehVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseLocalDonkeh)' != 'true'">
+    <PackageReference Include="Donkeh.Windowing" Version="$(DonkehVersion)" />
+  </ItemGroup>
+
+  <!-- Native LibVLC so preview playback works without a system VLC install. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-android'">
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <PackageReference Include="VideoLAN.LibVLC.Android" Version="3.6.5" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(UseLocalDonkeh)' == 'true'">
+    <ProjectReference Include="$(DonkehRoot)\HotReload\Source\Donkeh.HotReload.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <EmbeddedResource Update="**/*.css" Watch="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="src/Components/TitleBar/TitleBar.css" />
+    <EmbeddedResource Include="src/Components/IconButton/IconButton.css" />
+    <EmbeddedResource Include="src/Components/MediaLibrary/MediaLibrary.css" />
+    <EmbeddedResource Include="src/Components/PreviewMonitor/PreviewMonitor.css" />
+    <EmbeddedResource Include="src/Components/Inspector/Inspector.css" />
+    <EmbeddedResource Include="src/Components/Timeline/Timeline.css" />
+    <EmbeddedResource Include="src/Components/ExportDialog/ExportDialog.css" />
+    <EmbeddedResource Include="src/Components/MediaBrowser/MediaBrowser.css" />
+    <EmbeddedResource Include="src/Components/ToastHost/ToastHost.css" />
+    <EmbeddedResource Include="src/Components/Choice/Choice.css" />
+    <EmbeddedResource Include="src/Styles/theme.css" />
+  </ItemGroup>
+
+  <!--
+    LibVLCSharp's Core.Initialize() probes the application directory for libvlc.
+    The native package lays the runtime out under libvlc/<rid>, so flatten that
+    folder next to the executable (and into the publish output) as well.
+  -->
+  <Target Name="MovieDotNetCopyVlcNatives" AfterTargets="Build" Condition="Exists('$(TargetDir)libvlc\win-x64')">
+    <ItemGroup>
+      <VlcNative Include="$(TargetDir)libvlc\win-x64\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(VlcNative)" DestinationFolder="$(TargetDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="MovieDotNetCopyVlcNativesPublish" AfterTargets="Publish" Condition="Exists('$(PublishDir)libvlc\win-x64')">
+    <ItemGroup>
+      <VlcPublishNative Include="$(PublishDir)libvlc\win-x64\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(VlcPublishNative)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

@@ -1,0 +1,230 @@
+.preview {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background-color: #05070b;
+    border-bottom: 1px solid var(--line);
+}
+
+.preview-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0 16px;
+    background-color: var(--panel);
+    border-bottom: 1px solid var(--line);
+}
+
+.preview-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.preview-title i {
+    color: var(--accent);
+}
+
+.chip.is-accent {
+    border-color: #2f4470;
+    background-color: #16203a;
+    color: #cdd9ff;
+}
+
+.preview-stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+    padding: 16px;
+    overflow: hidden;
+    background-color: #06080d;
+    background-image: radial-gradient(circle at 50% 40%, #101827 0%, #05070b 70%);
+}
+
+.pv-canvas {
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px #262e40;
+}
+
+.pv-media {
+    display: block;
+}
+
+.pv-text {
+    display: block;
+    overflow: visible;
+    font-family: "Segoe UI", "Inter", sans-serif;
+}
+
+.pv-selection {
+    box-shadow: 0 0 0 3px rgba(63, 124, 255, 0.18);
+}
+
+.pv-handle {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.pv-capture {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    cursor: move;
+}
+
+.pv-empty {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #46536d;
+    background-image: radial-gradient(circle at 50% 45%, #131c2d 0%, #0a0e16 60%);
+}
+
+.pv-empty i {
+    font-size: 26px;
+    opacity: 0.7;
+}
+
+.pv-empty-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #8fa1c4;
+}
+
+.pv-empty-copy {
+    font-size: 11px;
+    color: #5c6a86;
+    max-width: 240px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------- transport */
+
+.transport {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 58px;
+    min-height: 58px;
+    padding: 0 18px;
+    background-color: var(--panel);
+    border-top: 1px solid var(--line);
+}
+
+.play-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-image: linear-gradient(135deg, #4f7dff, #6d64ff);
+    color: #ffffff;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(79, 125, 255, 0.4);
+    margin: 0 4px;
+}
+
+.play-button:hover {
+    background-image: linear-gradient(135deg, #6b92ff, #8a7dff);
+}
+
+.timecode {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-left: 10px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    background-color: #0b0e15;
+    border: 1px solid var(--line);
+}
+
+.timecode-now {
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #eaf0ff;
+}
+
+.timecode-sep {
+    color: #46536d;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0 3px;
+}
+
+.timecode-total {
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 12px;
+    line-height: 1.1;
+    color: var(--muted);
+}
+
+.preview-zoom {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+
+
+
+.pv-decoding {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: #0a0f18;
+    color: #8fa1c4;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.pv-decoding i {
+    color: var(--accent);
+    font-size: 14px;
+}
+
+.pv-poster {
+    opacity: 1;
+}
+
+.pv-decoding {
+    pointer-events: none;
+    background-color: rgba(8, 12, 20, 0.55);
+    border-radius: 4px;
+}
+
+.pv-decoding span {
+    color: #a9b8d6;
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}

@@ -1,0 +1,438 @@
+.library {
+    display: flex;
+    flex-direction: column;
+    width: 322px;
+    min-width: 322px;
+    background-color: var(--panel);
+    border-right: 1px solid var(--line);
+    min-height: 0;
+}
+
+.library-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.library-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.library-body {
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 18px;
+}
+
+.library-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 16px 10px;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.library-count {
+    margin-left: auto;
+    padding: 1px 7px;
+    border-radius: 20px;
+    background-color: var(--card);
+    color: var(--text-dim);
+    font-size: 10px;
+}
+
+.library-actions {
+    display: flex;
+    gap: 9px;
+    padding: 16px;
+}
+
+.library-actions .btn {
+    flex: 1;
+}
+
+/* ------------------------------------------------------------------ assets */
+
+.asset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 14px;
+}
+
+.asset-card {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background-color: var(--card);
+    cursor: pointer;
+    transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.asset-card:hover {
+    border-color: #34405a;
+    background-color: var(--card-2);
+}
+
+.asset-card.is-selected {
+    border-color: var(--accent);
+    background-color: #182238;
+}
+
+.asset-thumb {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 70px;
+    border-radius: 7px;
+    overflow: hidden;
+    background-color: #0b0e15;
+}
+
+.asset-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.asset-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(135deg, #16203a, #241a3d);
+    color: #7f93c4;
+    font-size: 18px;
+}
+
+.asset-badge {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    background-color: rgba(6, 9, 15, 0.72);
+    color: #dce6ff;
+    font-size: 9px;
+}
+
+.asset-add {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background-color: var(--accent);
+    color: #ffffff;
+    font-size: 9px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.asset-add:hover {
+    background-color: #6b92ff;
+}
+
+.asset-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0 3px 2px;
+}
+
+.asset-name {
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.asset-meta {
+    font-size: 9.5px;
+    color: var(--muted);
+}
+
+/* -------------------------------------------------------------- text presets */
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 14px;
+}
+
+.preset-grid.is-tight {
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    padding: 0;
+}
+
+.preset-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    min-height: 88px;
+    border-radius: 10px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.preset-card:hover {
+    border-color: #3c4a6a;
+    background-color: var(--card-2);
+}
+
+.preset-sample {
+    display: block;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.preset-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* -------------------------------------------------------------------- audio */
+
+.audio-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 12px;
+}
+
+.audio-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.audio-row:hover {
+    border-color: #3c4a6a;
+}
+
+.audio-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background-color: #26200f;
+    color: var(--orange);
+}
+
+.audio-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.audio-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.audio-meta {
+    font-size: 9.5px;
+    color: var(--muted);
+}
+
+.audio-add {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+/* -------------------------------------------------------------- transitions */
+
+.transition-groups {
+    display: flex;
+    flex-direction: column;
+}
+
+.transition-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 14px;
+}
+
+.transition-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 7px;
+    min-height: 50px;
+    border-radius: 9px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.transition-card:hover {
+    border-color: #3c4a6a;
+    background-color: var(--card-2);
+}
+
+.transition-card.is-active {
+    border-color: var(--accent);
+    background-color: #182238;
+}
+
+.transition-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.transition-duration {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+}
+
+/* ------------------------------------------------------------------ effects */
+
+.effect-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0 12px;
+}
+
+.effect-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+}
+
+.effect-row.is-on {
+    border-color: #3b5395;
+    background-color: #161f33;
+}
+
+.effect-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.effect-name {
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------- animations */
+
+.animation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 14px;
+}
+
+.animation-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 7px;
+    min-height: 50px;
+    border-radius: 9px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.animation-card:hover {
+    border-color: #3c4a6a;
+}
+
+.animation-card.is-active {
+    border-color: var(--accent);
+    background-color: #182238;
+}
+
+.animation-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+/* ----------------------------------------------------------------- settings */
+
+.size-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px;
+    border-radius: 9px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.size-card:hover {
+    border-color: #3c4a6a;
+}
+
+.size-card.is-active {
+    border-color: var(--accent);
+    background-color: #182238;
+}
+
+.size-name {
+    font-size: 10.5px;
+    font-weight: 600;
+}
+
+.size-meta {
+    font-size: 9.5px;
+    color: var(--muted);
+}

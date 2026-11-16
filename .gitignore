@@ -1,0 +1,6 @@
+bin/
+obj/
+builds/
+.idea/
+.idea
+*.user

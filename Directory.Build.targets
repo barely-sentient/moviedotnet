@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="$(DonkehRoot)\Build\Donkeh.targets" Condition="'$(UseLocalDonkeh)' == 'true' and Exists('$(DonkehRoot)\Build\Donkeh.targets')" />
+</Project>

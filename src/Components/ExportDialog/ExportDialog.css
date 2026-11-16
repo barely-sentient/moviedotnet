@@ -1,0 +1,138 @@
+.export-modal {
+    width: 640px;
+}
+
+.export-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.export-title i {
+    color: var(--accent);
+}
+
+.export-body {
+    gap: 16px;
+}
+
+.export-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.slider-row.is-flat {
+    padding: 0;
+}
+
+.export-hint {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.export-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+}
+
+.summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 11px;
+}
+
+.summary-label {
+    color: var(--muted);
+}
+
+.summary-value {
+    font-weight: 600;
+}
+
+.export-target {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 11px;
+    border-radius: 8px;
+    background-color: #0b0e15;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 10.5px;
+    word-break: break-all;
+}
+
+.export-target i {
+    color: var(--orange);
+}
+
+.progress-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.progress-label {
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.progress-track {
+    height: 8px;
+    border-radius: 6px;
+    background-color: #0b0e15;
+    border: 1px solid var(--line);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    background-image: linear-gradient(90deg, #4f7dff, #a06bff);
+    transition: width 180ms linear;
+}
+
+.export-log {
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #070a10;
+    border: 1px solid var(--line);
+}
+
+.export-log-text {
+    margin: 0;
+    color: #8fa2c4;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 10px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.export-note {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 10.5px;
+}
+
+.export-note i {
+    color: var(--green);
+}

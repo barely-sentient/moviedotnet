@@ -1,0 +1,44 @@
+.busy-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 28px;
+    background-color: #161e2d;
+    border: 1px solid #2b3852;
+    color: var(--text);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    font-size: 11.5px;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.busy-pill i {
+    color: var(--accent);
+}
+
+.busy-label {
+    max-width: 320px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.busy-track {
+    width: 140px;
+    height: 6px;
+    border-radius: 4px;
+    background-color: #0a0e16;
+    overflow: hidden;
+}
+
+.busy-fill {
+    height: 100%;
+    background-image: linear-gradient(90deg, #4f7dff, #a06bff);
+    transition: width 160ms linear;
+}
+
+.busy-percent {
+    color: var(--text-dim);
+    font-size: 10.5px;
+}

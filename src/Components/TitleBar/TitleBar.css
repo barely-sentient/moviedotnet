@@ -1,0 +1,116 @@
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.brand-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background-image: linear-gradient(135deg, #4f7dff, #a06bff);
+    color: #ffffff;
+    font-size: 14px;
+    box-shadow: 0 4px 14px rgba(79, 125, 255, 0.35);
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.brand-name {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.brand-sub {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.project-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.project-name {
+    width: 214px;
+    max-width: 214px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background-color: #0d1119;
+    border-color: #1b2333;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 32px;
+    text-overflow: ellipsis;
+    outline: none;
+}
+
+.project-name:hover {
+    background-color: #141a26;
+    border-color: #2a3448;
+}
+
+.project-name:focus {
+    background-color: #0b0e15;
+    border-color: #3f5da8;
+}
+
+.project-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 2px;
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.project-dot {
+    opacity: 0.5;
+}
+
+.title-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ffmpeg-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 20px;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 10.5px;
+    font-weight: 600;
+}
+
+.render-button {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(79, 125, 255, 0.35);
+}
