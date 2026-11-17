@@ -62,7 +62,7 @@
     -->
     <TargetFrameworks Condition="'$(DonkehAndroid)' == 'true'">net10.0;net10.0-android</TargetFrameworks>
     <TargetFramework Condition="'$(DonkehAndroid)' != 'true'">net10.0</TargetFramework>
-    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.31</DonkehVersion>
+    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.32</DonkehVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseLocalDonkeh)' != 'true'">
