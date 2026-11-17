@@ -76,6 +76,18 @@ That is expected on desktop. The app is frameless and draws its own title bar.
 Drag the bar to move; use the **—**, **□/❐** and **×** buttons at the right.
 On Android the host restores the system frame automatically.
 
+## Android build says NETSDK1005
+
+Let the CLI wire and restore the target:
+
+```bash
+donkeh enable-target android
+dotnet build -f net10.0-android --no-restore
+```
+
+The CLI enables `DonkehAndroid`, restores both `net10.0` and `net10.0-android`,
+and prints the build command. The assets file must contain both targets.
+
 ## Android limitations
 
 FFmpeg and ffprobe are desktop executables. On Android:

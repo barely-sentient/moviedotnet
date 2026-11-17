@@ -96,7 +96,15 @@ dotnet run -f net10.0
 ```
 
 The project references `Donkeh.Windowing` from NuGet and builds desktop by
-default. Add the Android target with `-p:DonkehAndroid=true`.
+default. For Android, let the CLI wire the target:
+
+```powershell
+donkeh enable-target android
+dotnet build -f net10.0-android --no-restore
+```
+
+`donkeh enable-target android` enables the target, adds the framework Android
+host package, restores both target frameworks and prints the next command.
 
 Useful development switches:
 

@@ -102,8 +102,15 @@ window chrome.
 dotnet run -f net10.0
 ```
 
-For Android, install the workload and build the Android target with
-`dotnet build -f net10.0-android -p:DonkehAndroid=true`.
+For Android, install the workload and let the CLI wire the target:
+
+```bash
+donkeh enable-target android
+dotnet build -f net10.0-android --no-restore
+```
+
+The CLI enables `DonkehAndroid`, adds the framework Android host package,
+restores both target frameworks and prints the build command.
 
 ![MovieDotNet first launch](images/empty-state.png)
 

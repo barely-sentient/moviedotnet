@@ -116,6 +116,13 @@ jobs:
       - name: Checkout MovieDotNet
         uses: actions/checkout@v4
 
+      - name: Checkout Donkeh signing key
+        uses: actions/checkout@v4
+        with:
+          repository: barely-sentient/donkeh-ui
+          ref: master
+          path: donkeh-ui
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -154,6 +161,11 @@ jobs:
             -p:AndroidPackageFormat=apk \
             -p:AndroidUseApkSigner=true \
             -p:AndroidCreatePackagePerAbi=false \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore="$GITHUB_WORKSPACE/donkeh-ui/Donkeh/Windowing/Android/Donkeh.Windowing.Android.keystore" \
+            -p:AndroidSigningKeyAlias=donkeh \
+            -p:AndroidSigningKeyPass=donkeh \
+            -p:AndroidSigningStorePass=donkeh \
             -p:AndroidSdkDirectory="$ANDROID_HOME" \
             -p:JavaSdkDirectory="$JAVA_HOME" \
             -p:ApplicationVersion=${{ github.run_number }} \

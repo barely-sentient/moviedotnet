@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net10.0-android'">24</SupportedOSPlatformVersion>
     <OutputType>Exe</OutputType>
     <RootNamespace>MovieDotNet</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -19,8 +20,8 @@
     <DonkehRoot Condition="'$(DonkehRoot)' == ''">$(MSBuildProjectDirectory)\..\UI Framework\CSS-Engine\Donkeh</DonkehRoot>
     <UseLocalDonkeh Condition="'$(UseLocalDonkeh)' == ''">false</UseLocalDonkeh>
     <DonkehDesktop>true</DonkehDesktop>
-    <!-- Opt in with -p:DonkehAndroid=true; desktop builds stay workload-free. -->
-    <DonkehAndroid Condition="'$(DonkehAndroid)' == ''">false</DonkehAndroid>
+    <!-- Enabled by: donkeh enable-target android -->
+    <DonkehAndroid Condition="'$(DonkehAndroid)' == ''">true</DonkehAndroid>
 
     <!--
       Pick the native LibVLC package by target runtime. Linux uses the distro's
@@ -123,4 +124,7 @@
     <Copy SourceFiles="@(VlcPublishNative)" DestinationFolder="$(PublishDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
   </Target>
 
+  <ItemGroup>
+    <PackageReference Include="Donkeh.Windowing.Android" Version="$(DonkehVersion)" Condition="'$(UseLocalDonkeh)' != 'true' and '$(TargetFramework)' == 'net10.0-android'" />
+  </ItemGroup>
 </Project>
