@@ -166,7 +166,11 @@ public sealed class ExportDialog : Component
                 Div(new() { ClassName = "modal-foot" },
                     Div(new() { ClassName = "export-note" },
                         H("i", new Props { ClassName = Ffmpeg.Available ? "fa-solid fa-circle-check" : "fa-solid fa-triangle-exclamation" }),
-                        Span(new(), Text(Ffmpeg.Available ? "Rendering with libx264 + aac" : "ffmpeg not found"))),
+                        Span(new(), Text(Ffmpeg.Available
+                            ? "Rendering with libx264 + aac"
+                            : Device.Mobile
+                                ? "Rendering runs on the desktop build"
+                                : "ffmpeg not found"))),
                     Div(new() { ClassName = "spacer" }),
                     Show(!ui.Busy, Button(new()
                     {

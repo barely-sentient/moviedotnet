@@ -29,13 +29,14 @@ public sealed class MediaLibrary : Component
             Div(new() { ClassName = "library-head" },
                 Span(new() { ClassName = "library-title" }, Text(TitleFor(showLooks ? looks : active))),
                 Div(new() { ClassName = "spacer" }),
-                Show(active == "media", Button(new()
+                Show(active == "media" && (!Device.Mobile || Ffmpeg.Available), Button(new()
                 {
                     ClassName = "btn is-small",
-                    OnClick = OpenMediaBrowser(store)
+                    OnClick = OpenBrowser(store, "media")
                 },
                     H("i", new Props { ClassName = "fa-solid fa-plus" }),
                     Text("Import")))),
+            Show(Device.Mobile, MobileTabs(store, showLooks ? "looks" : active)),
             Div(new() { ClassName = "library-body scroll" },
                 Show(showLooks, LooksTabs(store, looks)),
                 Show(active == "media", MediaTab(store)),
@@ -46,6 +47,40 @@ public sealed class MediaLibrary : Component
                 Show(showLooks && looks == "animations", AnimationsTab(store)),
                 Show(active == "record", RecordTab(store)),
                 Show(active == "settings", SettingsTab(store))));
+    }
+
+    /// <summary>
+    /// Phone-only destination switcher. The desktop rail is hidden on phones, so
+    /// these tabs are what make text, audio and looks reachable there.
+    /// </summary>
+    private static Node MobileTabs(EditorStore store, string current)
+    {
+        Node Tab(string id, string label) => Div(new()
+        {
+            ClassName = current == id ? "mobile-library-tab is-active" : "mobile-library-tab",
+            Title = label,
+            Attributes = new Dictionary<string, string>
+            {
+                ["role"] = "tab",
+                ["aria-selected"] = current == id ? "true" : "false"
+            },
+            OnClick = () =>
+            {
+                store.Ui.ActiveTab = id;
+                store.Notify();
+            }
+        },
+            Text(label));
+
+        return Div(new() { ClassName = "mobile-library-tabs", Attributes = new Dictionary<string, string>
+        {
+            ["role"] = "tablist"
+        } },
+            Tab("media", "Media"),
+            Tab("text", "Text"),
+            Tab("audio", "Audio"),
+            Tab("looks", "Looks"),
+            Tab("settings", "Setup"));
     }
 
     private static Node LooksTabs(EditorStore store, string current)
@@ -81,12 +116,14 @@ public sealed class MediaLibrary : Component
         _ => "Media bin"
     };
 
-    private static Action OpenMediaBrowser(EditorStore store) => () =>
+    private static Action OpenBrowser(EditorStore store, string mode) => () =>
     {
-        store.Ui.BrowserMode = "media";
+        store.Ui.BrowserMode = mode;
         store.Ui.ShowBrowser = true;
         store.Notify();
     };
+
+    private static Action OpenMediaBrowser(EditorStore store) => OpenBrowser(store, "media");
 
     // ------------------------------------------------------------------ media
 
@@ -97,6 +134,33 @@ public sealed class MediaLibrary : Component
 
         if (store.Document.Assets.Count == 0)
         {
+            // Phones have no FFmpeg, so import and demo generation cannot work
+            // there. Point at the two things that do: opening a project and
+            // building a title.
+            if (Device.Mobile && !Ffmpeg.Available)
+            {
+                return Div(new() { ClassName = "empty-panel is-mobile" },
+                    Div(new() { ClassName = "empty-icon" },
+                        H("i", new Props { ClassName = "fa-solid fa-folder-open" })),
+                    Span(new() { ClassName = "empty-title" }, Text("Open a project")),
+                    Span(new() { ClassName = "empty-copy" },
+                        Text("Pick a project saved on this device, or start with a title. Importing and rendering run on the desktop build.")),
+                    Button(new() { ClassName = "btn is-accent", OnClick = OpenBrowser(store, "open") },
+                        H("i", new Props { ClassName = "fa-solid fa-folder-open" }),
+                        Text("Open project")),
+                    Button(new()
+                    {
+                        ClassName = "btn",
+                        OnClick = () =>
+                        {
+                            store.Ui.ActiveTab = "text";
+                            store.Notify();
+                        }
+                    },
+                        H("i", new Props { ClassName = "fa-solid fa-font" }),
+                        Text("Add a title")));
+            }
+
             return Div(new() { ClassName = "empty-panel" },
                 Div(new() { ClassName = "empty-icon" },
                     H("i", new Props { ClassName = "fa-solid fa-cloud-arrow-up" })),
@@ -162,6 +226,7 @@ public sealed class MediaLibrary : Component
             Key = asset.Id,
             Title = $"{asset.Name}\n{asset.Path}\nDrag to the timeline to place it",
             Draggable = true,
+            OnContextMenu = e => ContextMenus.ShowAsset(store, asset, e),
             OnDragStart = evt =>
             {
                 evt.Data.SetData(DragFormats.Asset, asset.Id);
@@ -295,6 +360,23 @@ public sealed class MediaLibrary : Component
 
     // ------------------------------------------------------------------ audio
 
+    private static Node AudioEmpty(EditorStore store)
+    {
+        if (Device.Mobile && !Ffmpeg.Available)
+        {
+            return Div(new() { ClassName = "empty-panel is-compact" },
+                Span(new() { ClassName = "empty-title" }, Text("No audio yet")),
+                Span(new() { ClassName = "empty-copy" },
+                    Text("Open a project that already has audio, or add titles from the Text tab.")));
+        }
+
+        return Div(new() { ClassName = "empty-panel is-compact" },
+            Span(new() { ClassName = "empty-copy" }, Text("Import an audio file to add a soundtrack.")),
+            Button(new() { ClassName = "btn is-small", OnClick = OpenMediaBrowser(store) },
+                H("i", new Props { ClassName = "fa-solid fa-plus" }),
+                Text("Import audio")));
+    }
+
     private static Node AudioTab(EditorStore store)
     {
         var audio = store.Document.Assets.Where(a => a.Kind == AssetKind.Audio).ToList();
@@ -303,12 +385,7 @@ public sealed class MediaLibrary : Component
 
         return F(
             Section("Music & audio", "fa-solid fa-music", rows.Count),
-            Show(rows.Count == 0,
-                Div(new() { ClassName = "empty-panel is-compact" },
-                    Span(new() { ClassName = "empty-copy" }, Text("Import an audio file to add a soundtrack.")),
-                    Button(new() { ClassName = "btn is-small", OnClick = OpenMediaBrowser(store) },
-                        H("i", new Props { ClassName = "fa-solid fa-plus" }),
-                        Text("Import audio")))),
+            Show(rows.Count == 0, AudioEmpty(store)),
             Div(new() { ClassName = "audio-list" },
                 Each(rows, asset => Div(new()
                 {

@@ -116,6 +116,41 @@
     line-height: 1.55;
 }
 
+.pv-empty.is-mobile {
+    gap: 6px;
+    padding: 12px;
+    background-image: radial-gradient(circle at 50% 40%, #161d2e 0%, #0c1019 68%);
+}
+
+.pv-empty.is-mobile i {
+    font-size: 24px;
+}
+
+.pv-empty.is-mobile .pv-empty-title {
+    font-size: 15px;
+    color: #b7c4e2;
+}
+
+.pv-empty.is-mobile .pv-empty-copy {
+    max-width: 210px;
+    font-size: 11px;
+}
+
+.pv-empty-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 3px;
+}
+
+.pv-empty-actions .btn {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 11.5px;
+}
+
 /* ---------------------------------------------------------------- transport */
 
 .transport {
@@ -126,6 +161,42 @@
     min-height: 64px;
     padding: 0 20px;
     border-top: 1px solid var(--line-soft);
+}
+
+.transport.is-compact {
+    gap: 8px;
+    padding: 0 14px;
+}
+
+.transport.is-compact .timecode {
+    flex: none;
+    gap: 6px;
+    padding: 7px 11px;
+}
+
+.transport.is-compact .timecode-now {
+    font-size: 12.5px;
+}
+
+.transport.is-compact .timecode-total {
+    font-size: 10.5px;
+}
+
+.transport.is-compact .transport-main {
+    gap: 6px;
+}
+
+.transport.is-compact .transport-main .btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+}
+
+.transport.is-compact .play-button {
+    width: 50px;
+    height: 50px;
+    margin: 0 2px;
+    font-size: 15px;
 }
 
 .transport-main {

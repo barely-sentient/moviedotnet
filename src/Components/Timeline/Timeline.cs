@@ -16,7 +16,7 @@ namespace MovieDotNet.Components;
 public sealed class Timeline : Component
 {
     private const double DesktopHeaderWidth = 172;
-    private const double MobileHeaderWidth = 134;
+    private const double MobileHeaderWidth = 120;
     private const double RulerHeight = 32;
     private const double TrackGap = 4;
 
@@ -46,15 +46,17 @@ public sealed class Timeline : Component
 
         foreach (var track in document.Tracks)
         {
-            var rowHeight = Math.Max(Device.Mobile ? 30 : 38, track.Height * rowScale);
+            var rowHeight = Math.Max(Device.Mobile ? 46 : 38, track.Height * rowScale);
             rows.Add((track, top, rowHeight));
             top += rowHeight + TrackGap;
         }
 
         // Fit the whole edit into the visible lane until the user zooms manually.
+        // Phones have a much narrower lane, so the fit target is smaller and the
+        // content is allowed to be narrower than the desktop minimum.
         if (ui.TimelineFit)
         {
-            var fitWidth = Device.Mobile ? 300 : 560;
+            var fitWidth = Device.Mobile ? 215 : 560;
             var fit = Math.Clamp(fitWidth / Math.Max(8, document.Duration), 8, 320);
             ui.Zoom = Math.Round(fit, 1);
         }
@@ -62,7 +64,9 @@ public sealed class Timeline : Component
         var headerWidth = Device.Mobile ? MobileHeaderWidth : DesktopHeaderWidth;
         var contentHeight = top + 12;
         var duration = Math.Max(document.Duration, ui.Playhead + 4);
-        var contentWidth = Math.Max(720, Math.Round(duration * ui.Zoom + 70));
+        var contentWidth = Math.Max(
+            Device.Mobile ? 240 : 720,
+            Math.Round(duration * ui.Zoom + (Device.Mobile ? 20 : 70)));
 
         return Div(new() { ClassName = "timeline" },
             Toolbar(store),
@@ -77,7 +81,11 @@ public sealed class Timeline : Component
                     } },
                         Span(new() { ClassName = "heads-hint" }, Text("Tracks"))),
                     Each(rows, row => TrackHeader(store, row.Track, row.Height))),
-                Div(new() { ClassName = "timeline-scroll scroll-x" },
+                Div(new()
+                {
+                    ClassName = "timeline-scroll scroll-x",
+                    OnContextMenu = e => ContextMenus.ShowTimeline(store, e)
+                },
                     Div(new()
                     {
                         ClassName = "timeline-content",
@@ -116,6 +124,7 @@ public sealed class Timeline : Component
                             {
                                 ["style"] = $"width:{contentWidth}px;height:{contentHeight}px;"
                             },
+                            OnContextMenu = e => ContextMenuAt(store, rows, e),
                             OnPointerDown = (x, y) => Begin(store, drag, rows, x, y),
                             OnPointerMove = (x, y) => Move(store, drag, rows, x, y),
                             OnPointerUp = (x, y) => End(store, drag),
@@ -147,24 +156,11 @@ public sealed class Timeline : Component
 
         void AddTrack(TrackKind kind, string name, double height, bool atTop)
         {
-            store.Edit(_ =>
-            {
-                var track = new Track { Kind = kind, Name = name, Height = height };
-
-                if (atTop)
-                {
-                    document.Tracks.Insert(0, track);
-                }
-                else
-                {
-                    document.Tracks.Add(track);
-                }
-            }, "Add track");
-
+            store.AddTrack(kind, name, height, atTop);
             setTracksOpen(false);
         }
 
-        Node TrackOption(string icon, string label, Action action) =>
+        Node? TrackOption(string icon, string label, Action action) =>
             Div(new()
             {
                 ClassName = "track-add-item",
@@ -172,6 +168,69 @@ public sealed class Timeline : Component
             },
                 H("i", new Props { ClassName = icon }),
                 Span(new(), Text(label)));
+
+        Node? TrackMenu() => Show(tracksOpen,
+            Div(new() { ClassName = "track-add-menu" },
+                TrackOption("fa-solid fa-film", "Video track",
+                    () => AddTrack(TrackKind.Video,
+                        $"Video {document.Tracks.Count(t => t.Kind == TrackKind.Video) + 1}", 62, true)),
+                TrackOption("fa-solid fa-layer-group", "Overlay track",
+                    () => AddTrack(TrackKind.Overlay,
+                        $"Overlay {document.Tracks.Count(t => t.Kind == TrackKind.Overlay) + 1}", 52, true)),
+                TrackOption("fa-solid fa-font", "Text track",
+                    () => AddTrack(TrackKind.Text,
+                        $"Text {document.Tracks.Count(t => t.Kind == TrackKind.Text) + 1}", 46, true)),
+                TrackOption("fa-solid fa-music", "Audio track",
+                    () => AddTrack(TrackKind.Audio,
+                        $"Audio {document.Tracks.Count(t => t.Kind == TrackKind.Audio) + 1}", 46, false))));
+
+        var addButton = Button(new()
+        {
+            ClassName = "btn is-small",
+            Title = "Add a track",
+            OnClick = Device.Mobile
+                ? () =>
+                {
+                    store.Ui.MobileSheet = "track";
+                    store.Notify();
+                }
+                : () => setTracksOpen(!tracksOpen)
+        },
+            H("i", new Props { ClassName = "fa-solid fa-plus" }),
+            Text("Track"));
+
+        if (Device.Mobile)
+        {
+            Node FlatTool(string icon, string label, Action action, bool disabled = false, bool active = false) =>
+                Button(new()
+                {
+                    ClassName = active ? "btn is-small tl-tool is-active" : "btn is-small tl-tool",
+                    Title = label,
+                    Disabled = disabled,
+                    OnClick = action
+                },
+                    H("i", new Props { ClassName = icon }),
+                    Span(new() { ClassName = "tl-tool-label" }, Text(label)));
+
+            // Phones keep the three editing verbs plus snap, fit and add. Labels
+            // remove the guessing game that icon-only toolbars cause on touch,
+            // and the zoom slider moves to the fit button.
+            return Div(new() { ClassName = "timeline-toolbar is-mobile" },
+                FlatTool("fa-solid fa-scissors", "Split", () => store.SplitAtPlayhead()),
+                FlatTool("fa-solid fa-trash", "Delete", store.DeleteSelected, store.SelectedClip is null),
+                Div(new() { ClassName = "spacer" }),
+                FlatTool("fa-solid fa-magnet", "Snap", () =>
+                {
+                    ui.Snap = !ui.Snap;
+                    store.Notify();
+                }, active: ui.Snap),
+                FlatTool("fa-solid fa-arrows-left-right-to-line", "Fit", () =>
+                {
+                    store.Ui.TimelineFit = true;
+                    store.Notify();
+                }),
+                Div(new() { ClassName = "track-add" }, addButton));
+        }
 
         return Div(new() { ClassName = "timeline-toolbar" },
             Tool("fa-solid fa-scissors", "Split at playhead", () => store.SplitAtPlayhead()),
@@ -184,28 +243,7 @@ public sealed class Timeline : Component
                 store.Notify();
             }, active: ui.Snap),
             Div(new() { ClassName = "spacer" }),
-            Div(new() { ClassName = "track-add" },
-                Button(new()
-                {
-                    ClassName = "btn is-small",
-                    OnClick = () => setTracksOpen(!tracksOpen)
-                },
-                    H("i", new Props { ClassName = "fa-solid fa-plus" }),
-                    Text("Track")),
-                Show(tracksOpen,
-                    Div(new() { ClassName = "track-add-menu" },
-                        TrackOption("fa-solid fa-film", "Video track",
-                            () => AddTrack(TrackKind.Video,
-                                $"Video {document.Tracks.Count(t => t.Kind == TrackKind.Video) + 1}", 62, true)),
-                        TrackOption("fa-solid fa-layer-group", "Overlay track",
-                            () => AddTrack(TrackKind.Overlay,
-                                $"Overlay {document.Tracks.Count(t => t.Kind == TrackKind.Overlay) + 1}", 52, true)),
-                        TrackOption("fa-solid fa-font", "Text track",
-                            () => AddTrack(TrackKind.Text,
-                                $"Text {document.Tracks.Count(t => t.Kind == TrackKind.Text) + 1}", 46, true)),
-                        TrackOption("fa-solid fa-music", "Audio track",
-                            () => AddTrack(TrackKind.Audio,
-                                $"Audio {document.Tracks.Count(t => t.Kind == TrackKind.Audio) + 1}", 46, false))))),
+            Div(new() { ClassName = "track-add" }, addButton, TrackMenu()),
             Div(new() { ClassName = "zoom" },
                 H("i", new Props { ClassName = "fa-solid fa-magnifying-glass-minus" }),
                 Input(new()
@@ -315,6 +353,7 @@ public sealed class Timeline : Component
         {
             ClassName = "track-head",
             Key = "head-" + track.Id,
+            OnContextMenu = e => ContextMenus.ShowTrack(store, track, e),
             Attributes = new Dictionary<string, string>
             {
                 ["style"] = $"height:{height}px;min-height:{height}px;"
@@ -380,6 +419,28 @@ public sealed class Timeline : Component
     };
 
     // ------------------------------------------------------------ drag & drop
+
+    /// <summary>Finds the clip under a context-menu press, or opens the timeline menu.</summary>
+    private static void ContextMenuAt(
+        EditorStore store,
+        List<(Track? Track, double Top, double Height)> rows,
+        ContextMenuEvent e)
+    {
+        if (e.Y >= RulerHeight)
+        {
+            var time = e.X / Math.Max(1, store.Ui.Zoom);
+            var track = TrackAt(rows, e.Y);
+            var clip = track?.Clips.FirstOrDefault(c => time >= c.Start && time <= c.End);
+
+            if (clip is not null)
+            {
+                ContextMenus.ShowClip(store, clip, e);
+                return;
+            }
+        }
+
+        ContextMenus.ShowTimeline(store, e);
+    }
 
     /// <summary>Finds the track row under a content-space Y coordinate.</summary>
     private static Track? TrackAt(List<(Track? Track, double Top, double Height)> rows, double y)
@@ -545,6 +606,7 @@ public sealed class Timeline : Component
         {
             ClassName = className,
             Key = clip.Id,
+            OnContextMenu = e => ContextMenus.ShowClip(store, clip, e),
             Attributes = new Dictionary<string, string>
             {
                 ["style"] =

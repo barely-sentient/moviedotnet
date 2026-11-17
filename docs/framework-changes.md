@@ -1,6 +1,6 @@
 # Framework changes used by MovieDotNet
 
-MovieDotNet depends on **`Donkeh.Windowing` 1.0.31** from NuGet. The edits
+MovieDotNet depends on **`Donkeh.Windowing` 1.0.36** from NuGet. The edits
 below landed in that package while building the editor; they are recorded here
 because the editor relies on them. Everything else uses the published API.
 
@@ -138,12 +138,38 @@ The app adds `src/Components/Window` (the `Window` component, `WindowControls`
 and CSS) and opts into `Frameless = true`. `app-region: drag`/`no-drag` controls
 which parts of the bar move the window.
 
+## 9. Context-menu events
+
+**Problem.** The editor needs Cut/Copy/Paste, duplicate, split and delete menus
+for timeline clips, media assets and track headers.
+
+**Change** (`Donkeh/UILab/Source/Props.cs`, `ContextMenu.cs` and
+`Donkeh/Windowing/Source/DonkehWindow.cs`)
+
+```csharp
+public Action<ContextMenuEvent>? OnContextMenu { get; init; }
+
+public sealed class ContextMenuEvent
+{
+    public ElementNode Target { get; }        // deepest node under the pointer
+    public ElementNode CurrentTarget { get; } // node that owns the handler
+    public float X, Y;                        // local to CurrentTarget
+    public float WindowX, WindowY;            // window CSS pixels
+}
+```
+
+Desktop dispatches `contextmenu` on the right-button press. The local framework
+also dispatches it after a 500 ms stationary long press on mobile, which is what
+Android uses; that trigger needs the local checkout until it is published in a
+new package.
+
 ## Notes
 
 - Everything else is public framework API: `Provider`, hooks, `Props`,
   `VideoProps`/`VideoHost`, `CanvasProps`, `Stylesheet`, `Image`, `AppRoot`.
 - The desktop host's `--screenshot` flag and the app's `MOVIEDOTNET_*` switches
   are what the smoke tests use.
-- These changes are part of `Donkeh.Windowing` 1.0.31. For further framework
-  work, build against the local checkout with `UseLocalDonkeh=true`; when the
-  change ships, bump `DonkehVersion` and return to NuGet.
+- These changes are part of the `Donkeh.Windowing` 1.0.x line; the current
+  package is 1.0.36. For further framework work, build against the local
+  checkout with `UseLocalDonkeh=true`; when the change ships, bump
+  `DonkehVersion` and return to NuGet.

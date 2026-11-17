@@ -129,6 +129,12 @@ restores both target frameworks and prints the build command.
    a look, or drop an asset onto the timeline.
 6. **Save** — use the floppy icon in the title bar or **Project setup → Save**.
 
+On a phone the same flow uses three pages: **Edit**, **Media** (with Media,
+Text, Audio, Looks and Setup tabs) and **Adjust**. The **⋯** button holds Save,
+Open, Undo, Redo and Project setup, and **+ Track** opens a track sheet. When
+FFmpeg is not available the media bin offers **Open project** and **Add a title**
+instead of import actions.
+
 ## The first screen
 
 | Region | Purpose |

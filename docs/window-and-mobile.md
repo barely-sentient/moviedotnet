@@ -37,14 +37,40 @@ frameless.
 
 The phone layout shows one page at a time:
 
-- **Edit** — the Program monitor above the timeline.
-- **Media** — the media bin, text, audio and Looks destinations.
-- **Look** — the inspector.
+- **Edit** — the preview, a compact transport and the timeline.
+- **Media** — the library, with **Media / Text / Audio / Looks / Setup** tabs.
+- **Adjust** — the inspector for the selected clip.
 
 A bottom navigation bar switches pages. The preview canvas is sized in viewport
-units, the timeline uses compact track rows and the inspector collapses to one
-column. Import, analysis and render need FFmpeg and are unavailable on Android;
-recording is Windows-only.
+units, the timeline uses taller, touch-sized track rows and the inspector
+collapses to one column.
+
+Context menus use the same commands on both hosts: **right-click** on desktop
+and **long-press** on Android. Timeline clips offer Cut, Copy, Paste, Duplicate,
+Split and Delete; media cards offer Add to timeline and picture-in-picture;
+track headers offer mute, hide, lock and clear. The phone menu opens as a bottom
+sheet, while the desktop menu anchors beside the pointer.
+
+The phone shell is deliberately simpler than the desktop docks:
+
+- The transport keeps play, one-second steps and go-to-start; start/end jumps
+  and the keyboard hint are desktop-only.
+- Timeline tools carry text labels (**Split**, **Delete**, **Snap**, **Fit**,
+  **Track**) instead of relying on small icons, and the zoom slider is replaced
+  by **Fit**.
+- The **⋯** button opens a bottom sheet with Save, Open, Undo, Redo and Project
+  setup. **+ Track** opens the same sheet with the four track kinds.
+- The preview's empty state offers **Add media** and **Title** so a new project
+  can start without a drag gesture.
+- Toasts sit above the bottom navigation, and the timeline body scrolls
+  vertically when a project has more tracks than fit on screen.
+
+![Mobile library](images/mobile-media.png)
+
+Import, analysis and render need FFmpeg and are unavailable on Android;
+recording is Windows-only. On a phone the media bin therefore offers **Open
+project** and **Add a title** when FFmpeg is not present, and the Export dialog
+explains that rendering runs on the desktop build.
 
 ## Window actions
 

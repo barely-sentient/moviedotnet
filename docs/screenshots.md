@@ -105,5 +105,11 @@ The custom title bar with minimise, maximise/restore and close controls.
 
 ![Phone shell](images/mobile.png)
 
-The phone shell with Edit / Media / Look navigation. No desktop window controls
-are rendered, and the Android host keeps the system frame.
+The phone shell with **Edit / Media / Adjust** navigation, a labelled timeline
+toolbar and the four-button transport. No desktop window controls are rendered,
+and the Android host keeps the system frame.
+
+![Phone media library](images/mobile-media.png)
+
+The Media page carries the **Media / Text / Audio / Looks / Setup** tabs, so
+every desktop rail destination stays reachable on a phone.

@@ -743,3 +743,98 @@
     opacity: 1;
     pointer-events: auto;
 }
+
+/* ------------------------------------------------------- mobile destinations */
+
+.mobile-library-tabs {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    margin: 0 14px 10px;
+    padding: 3px;
+    border-radius: 999px;
+    background-color: var(--bg-soft);
+    border: 1px solid var(--line-soft);
+}
+
+.mobile-library-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.mobile-library-tab.is-active {
+    background-color: var(--accent-soft);
+    color: #e2e8ff;
+}
+
+.is-mobile .library-head {
+    padding: 14px 14px 10px;
+}
+
+.is-mobile .library-title {
+    font-size: 14px;
+}
+
+.is-mobile .asset-add,
+.is-mobile .asset-pip {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    font-size: 11px;
+}
+
+.is-mobile .looks-tab {
+    height: 38px;
+    font-size: 12px;
+}
+
+.is-mobile .looks-tabs {
+    margin: 10px 14px 6px;
+}
+
+.is-mobile .asset-add {
+    right: 8px;
+    bottom: 8px;
+}
+
+.is-mobile .asset-pip {
+    right: 44px;
+    bottom: 8px;
+}
+
+.is-mobile .asset-name {
+    font-size: 12px;
+}
+
+.is-mobile .asset-meta {
+    font-size: 10.5px;
+}
+
+.is-mobile .asset-thumb {
+    height: 84px;
+}
+
+.is-mobile .empty-panel.is-mobile {
+    gap: 14px;
+    padding: 30px 22px;
+}
+
+.is-mobile .empty-panel.is-mobile .empty-copy {
+    max-width: 290px;
+    font-size: 12px;
+}
+
+.is-mobile .empty-panel .btn {
+    width: 100%;
+    max-width: 280px;
+    min-height: 44px;
+}

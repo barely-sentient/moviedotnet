@@ -39,6 +39,12 @@ public sealed class EditorUi
     /// <summary>Gets or sets whether the media browser is open.</summary>
     public bool ShowBrowser { get; set; }
 
+    /// <summary>Gets or sets the open phone sheet: <c>project</c>, <c>track</c> or empty.</summary>
+    public string MobileSheet { get; set; } = "";
+
+    /// <summary>Gets or sets the open context menu, or <see langword="null"/>.</summary>
+    public EditorContextMenu? ContextMenu { get; set; }
+
     /// <summary>Gets or sets whether the project setup panel is open.</summary>
     public bool ShowSettings { get; set; }
 
@@ -143,6 +149,7 @@ public sealed class EditorStore
 
     private readonly List<string> _undo = new();
     private readonly List<string> _redo = new();
+    private Clip? _clipboard;
     private string? _pendingSnapshot;
     private double _lastPlayheadNotify;
     private string? _lastLabel;
@@ -262,6 +269,9 @@ public sealed class EditorStore
 
     /// <summary>Gets whether a redo step is available.</summary>
     public bool CanRedo => _redo.Count > 0;
+
+    /// <summary>Gets whether a clip is on the internal clipboard.</summary>
+    public bool CanPaste => _clipboard is not null;
 
     /// <summary>Restores the previous document snapshot.</summary>
     public void Undo()
@@ -449,6 +459,31 @@ public sealed class EditorStore
         return track;
     }
 
+    /// <summary>Adds a new empty track in one undoable edit.</summary>
+    /// <param name="kind">The track kind.</param>
+    /// <param name="name">The display name.</param>
+    /// <param name="height">The preferred row height.</param>
+    /// <param name="atTop">When <see langword="true"/>, inserts above the existing tracks.</param>
+    /// <returns>The new track.</returns>
+    public Track AddTrack(TrackKind kind, string name, double height, bool atTop)
+    {
+        var track = new Track { Kind = kind, Name = name, Height = height };
+
+        Edit(_ =>
+        {
+            if (atTop)
+            {
+                Document.Tracks.Insert(0, track);
+            }
+            else
+            {
+                Document.Tracks.Add(track);
+            }
+        }, "Add track");
+
+        return track;
+    }
+
     /// <summary>Adds a media asset to the bin, optionally placing it on the timeline.</summary>
     /// <param name="asset">The analysed asset to add.</param>
     /// <param name="placeOnTimeline">When <see langword="true"/>, also creates a clip at the playhead.</param>
@@ -607,6 +642,113 @@ public sealed class EditorStore
         copy.Id = Guid.NewGuid().ToString("n")[..8];
         Edit(_ => track.Clips.Add(copy), "Duplicate clip");
         Ui.SelectedClipId = copy.Id;
+    }
+
+    /// <summary>Copies the selected clip to the internal clipboard.</summary>
+    public void CopySelected()
+    {
+        var clip = SelectedClip;
+
+        if (clip is null)
+        {
+            return;
+        }
+
+        _clipboard = clip.Clone();
+        Toast($"{clip.Name} copied");
+    }
+
+    /// <summary>Copies the selected clip and removes it from the timeline.</summary>
+    public void CutSelected()
+    {
+        var clip = SelectedClip;
+        var track = clip is null ? null : Document.TrackOf(clip);
+
+        if (clip is null || track is null)
+        {
+            return;
+        }
+
+        _clipboard = clip.Clone();
+        Edit(_ => track.Clips.RemoveAll(c => c.Id == clip.Id), "Cut clip");
+        Ui.SelectedClipId = null;
+        Toast($"{clip.Name} cut");
+    }
+
+    /// <summary>
+    /// Pastes the clipboard clip at the playhead on a compatible track.
+    /// </summary>
+    /// <param name="at">Start time in seconds, or the playhead when omitted.</param>
+    /// <returns>The pasted clip, or <see langword="null"/> when the clipboard is empty.</returns>
+    /// <remarks>
+    /// The clip keeps its kind, length and styling. If no compatible track is
+    /// free, a new track is created in the same undo step. Pasted clips move
+    /// forward until they no longer overlap an existing clip on the track.
+    /// </remarks>
+    public Clip? PasteClip(double? at = null)
+    {
+        var source = _clipboard;
+
+        if (source is null)
+        {
+            return null;
+        }
+
+        var start = Math.Max(0, at ?? Ui.Playhead);
+        var duration = Math.Max(0.15, source.Duration);
+        var track = Document.Tracks.FirstOrDefault(t => t.Kind == source.Kind && !t.Locked);
+        var createTrack = track is null;
+
+        if (track is null)
+        {
+            var count = Document.Tracks.Count(t => t.Kind == source.Kind) + 1;
+            var name = source.Kind switch
+            {
+                TrackKind.Video => "Video",
+                TrackKind.Overlay => "Overlay",
+                TrackKind.Text => "Text",
+                _ => "Audio"
+            };
+
+            track = new Track
+            {
+                Kind = source.Kind,
+                Name = $"{name} {count}",
+                Height = source.Kind switch
+                {
+                    TrackKind.Video => 62,
+                    TrackKind.Overlay => 52,
+                    _ => 46
+                }
+            };
+        }
+
+        while (track.Clips.Any(c => c.Start < start + duration - 0.05 && c.End > start + 0.05))
+        {
+            start = track.Clips.Where(c => c.End > start).Select(c => c.End).DefaultIfEmpty(start).Max() + 0.1;
+        }
+
+        var copy = source.Clone();
+        copy.TrackId = track.Id;
+        copy.Start = start;
+        var target = track;
+
+        Edit(_ =>
+        {
+            if (createTrack)
+            {
+                Document.Tracks.Insert(
+                    source.Kind == TrackKind.Audio ? Document.Tracks.Count : 0,
+                    target);
+            }
+
+            target.Clips.Add(copy);
+        }, "Paste clip");
+
+        Ui.SelectedClipId = copy.Id;
+        Ui.SelectedTrackId = target.Id;
+        Toast($"{copy.Name} pasted");
+        return copy;
     }
 
     /// <summary>Splits every unlocked clip that spans the playhead, or just the selection.</summary>

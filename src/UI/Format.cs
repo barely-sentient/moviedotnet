@@ -12,6 +12,17 @@ public static class Format
         return $"{minutes}:{rest:00.00}";
     }
 
+    /// <summary>Formats seconds as a compact <c>m:ss</c> clock for narrow layouts.</summary>
+    /// <param name="seconds">The time in seconds.</param>
+    /// <returns>A label such as <c>1:07</c>.</returns>
+    public static string Clock(double seconds)
+    {
+        seconds = Math.Max(0, seconds);
+        var minutes = (int)(seconds / 60);
+        var rest = (int)(seconds - minutes * 60);
+        return $"{minutes}:{rest:00}";
+    }
+
     /// <summary>Formats seconds as a timecode with frames.</summary>
     public static string Timecode(double seconds, double fps)
     {

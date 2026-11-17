@@ -124,11 +124,13 @@ public sealed class PreviewMonitor : Component
             Div(new Props() { ClassName = "preview-head" },
                 Div(new Props() { ClassName = "preview-title" },
                     H("i", new Props() { ClassName = "fa-solid fa-tv" }),
-                    Span(new Props(), Text("Program"))),
+                    Span(new Props(), Text(mobile ? "Preview" : "Program"))),
                 Span(new Props() { ClassName = "preview-meta" },
-                    Text($"{document.Width} × {document.Height}  ·  {document.Fps:0.##} fps")),
+                    Text(mobile
+                        ? $"{document.Width} × {document.Height}"
+                        : $"{document.Width} × {document.Height}  ·  {document.Fps:0.##} fps")),
                 Div(new Props() { ClassName = "spacer" }),
-                C<IconButton, IconButtonProps>(new IconButtonProps
+                Show(!mobile, C<IconButton, IconButtonProps>(new IconButtonProps
                 {
                     Icon = "fa-solid fa-camera",
                     Tooltip = "Save current frame (ffmpeg)",
@@ -140,8 +142,8 @@ public sealed class PreviewMonitor : Component
                             $"{ProjectFiles.Sanitize(document.Name)}-frame-{(int)(playhead * 1000)}.png");
                         EditorCommands.SnapshotAsync(store, SettingsFor(store), path);
                     }
-                }),
-                C<IconButton, IconButtonProps>(new IconButtonProps
+                })),
+                Show(!mobile, C<IconButton, IconButtonProps>(new IconButtonProps
                 {
                     Icon = store.Ui.PreviewFullscreen ? "fa-solid fa-compress" : "fa-solid fa-expand",
                     Tooltip = "Fullscreen preview",
@@ -151,9 +153,13 @@ public sealed class PreviewMonitor : Component
                         store.Ui.PreviewFullscreen = !store.Ui.PreviewFullscreen;
                         store.Notify();
                     }
-                })),
+                }))),
 
-            Div(new Props() { ClassName = "preview-stage" },
+            Div(new Props()
+            {
+                ClassName = "preview-stage",
+                OnContextMenu = e => ContextMenus.ShowPreview(store, e)
+            },
                 Div(new Props()
                 {
                     ClassName = canvasClass,
@@ -172,61 +178,116 @@ public sealed class PreviewMonitor : Component
                     Each(Layers(store, playhead), layer => layer),
                     SelectionOverlay(store, playhead))),
 
-            Div(new Props() { ClassName = "transport" },
-                Div(new Props() { ClassName = "timecode" },
-                    Span(new Props() { ClassName = "timecode-now" }, Text(Format.Timecode(playhead, document.Fps))),
-                    Span(new Props() { ClassName = "timecode-sep" }, Text("/")),
-                    Span(new Props() { ClassName = "timecode-total" }, Text(Format.Timecode(document.Duration, document.Fps)))),
-
-                Div(new Props() { ClassName = "spacer" }),
-
-                Div(new Props() { ClassName = "transport-main" },
-                    C<IconButton, IconButtonProps>(new IconButtonProps
-                    {
-                        Icon = "fa-solid fa-backward-step",
-                        Tooltip = "Go to start",
-                        OnClick = () => store.SetPlayhead(0)
-                    }),
-                    C<IconButton, IconButtonProps>(new IconButtonProps
-                    {
-                        Icon = "fa-solid fa-backward",
-                        Tooltip = "Back one second",
-                        OnClick = () => store.SetPlayhead(playhead - 1)
-                    }),
-                    Div(new Props()
-                    {
-                        ClassName = "play-button",
-                        Title = store.Ui.Playing ? "Pause (space)" : "Play (space)",
-                        OnClick = () =>
-                        {
-                            if (!store.Ui.Playing && playhead >= document.Duration - 0.05)
-                            {
-                                store.SetPlayhead(0);
-                            }
-
-                            store.TogglePlay();
-                        }
-                    },
-                        H("i", new Props() { ClassName = store.Ui.Playing ? "fa-solid fa-pause" : "fa-solid fa-play" })),
-                    C<IconButton, IconButtonProps>(new IconButtonProps
-                    {
-                        Icon = "fa-solid fa-forward",
-                        Tooltip = "Forward one second",
-                        OnClick = () => store.SetPlayhead(playhead + 1)
-                    }),
-                    C<IconButton, IconButtonProps>(new IconButtonProps
-                    {
-                        Icon = "fa-solid fa-forward-step",
-                        Tooltip = "Go to end",
-                        OnClick = () => store.SetPlayhead(document.Duration)
-                    })),
-
-                Div(new Props() { ClassName = "spacer" }),
-
-                Span(new Props() { ClassName = "transport-hint" },
-                    H("i", new Props() { ClassName = "fa-regular fa-keyboard" }),
-                    Span(new Props(), Text("Space to play")))));
+            mobile
+                ? MobileTransport(store, playhead, document)
+                : DesktopTransport(store, playhead, document));
     }
+
+    /// <summary>The compact phone transport: time, start, one-second steps and play.</summary>
+    private static Node MobileTransport(EditorStore store, double playhead, ProjectDocument document) =>
+        Div(new Props() { ClassName = "transport is-compact" },
+            Div(new Props()
+            {
+                ClassName = "timecode",
+                Title = "Current time and duration"
+            },
+                Span(new Props() { ClassName = "timecode-now" }, Text(Format.Clock(playhead))),
+                Span(new Props() { ClassName = "timecode-sep" }, Text("/")),
+                Span(new Props() { ClassName = "timecode-total" }, Text(Format.Clock(document.Duration)))),
+
+            Div(new Props() { ClassName = "spacer" }),
+
+            Div(new Props() { ClassName = "transport-main" },
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-backward-step",
+                    Tooltip = "Go to start",
+                    OnClick = () => store.SetPlayhead(0)
+                }),
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-backward",
+                    Tooltip = "Back one second",
+                    OnClick = () => store.SetPlayhead(playhead - 1)
+                }),
+                Div(new Props()
+                {
+                    ClassName = "play-button",
+                    Title = store.Ui.Playing ? "Pause" : "Play",
+                    OnClick = () =>
+                    {
+                        if (!store.Ui.Playing && playhead >= document.Duration - 0.05)
+                        {
+                            store.SetPlayhead(0);
+                        }
+
+                        store.TogglePlay();
+                    }
+                },
+                    H("i", new Props() { ClassName = store.Ui.Playing ? "fa-solid fa-pause" : "fa-solid fa-play" })),
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-forward",
+                    Tooltip = "Forward one second",
+                    OnClick = () => store.SetPlayhead(playhead + 1)
+                })));
+
+    /// <summary>The desktop transport keeps start/end jumps and the keyboard hint.</summary>
+    private static Node DesktopTransport(EditorStore store, double playhead, ProjectDocument document) =>
+        Div(new Props() { ClassName = "transport" },
+            Div(new Props() { ClassName = "timecode" },
+                Span(new Props() { ClassName = "timecode-now" }, Text(Format.Timecode(playhead, document.Fps))),
+                Span(new Props() { ClassName = "timecode-sep" }, Text("/")),
+                Span(new Props() { ClassName = "timecode-total" }, Text(Format.Timecode(document.Duration, document.Fps)))),
+
+            Div(new Props() { ClassName = "spacer" }),
+
+            Div(new Props() { ClassName = "transport-main" },
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-backward-step",
+                    Tooltip = "Go to start",
+                    OnClick = () => store.SetPlayhead(0)
+                }),
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-backward",
+                    Tooltip = "Back one second",
+                    OnClick = () => store.SetPlayhead(playhead - 1)
+                }),
+                Div(new Props()
+                {
+                    ClassName = "play-button",
+                    Title = store.Ui.Playing ? "Pause (space)" : "Play (space)",
+                    OnClick = () =>
+                    {
+                        if (!store.Ui.Playing && playhead >= document.Duration - 0.05)
+                        {
+                            store.SetPlayhead(0);
+                        }
+
+                        store.TogglePlay();
+                    }
+                },
+                    H("i", new Props() { ClassName = store.Ui.Playing ? "fa-solid fa-pause" : "fa-solid fa-play" })),
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-forward",
+                    Tooltip = "Forward one second",
+                    OnClick = () => store.SetPlayhead(playhead + 1)
+                }),
+                C<IconButton, IconButtonProps>(new IconButtonProps
+                {
+                    Icon = "fa-solid fa-forward-step",
+                    Tooltip = "Go to end",
+                    OnClick = () => store.SetPlayhead(document.Duration)
+                })),
+
+            Div(new Props() { ClassName = "spacer" }),
+
+            Span(new Props() { ClassName = "transport-hint" },
+                H("i", new Props() { ClassName = "fa-regular fa-keyboard" }),
+                Span(new Props(), Text("Space to play"))));
 
     private static RenderSettings SettingsFor(EditorStore store) => new()
     {
@@ -420,14 +481,42 @@ public sealed class PreviewMonitor : Component
 
         if (layers.Count == 0)
         {
-            layers.Add(Div(new Props() { ClassName = "pv-empty" },
-                H("i", new Props() { ClassName = "fa-solid fa-clapperboard" }),
-                Span(new Props() { ClassName = "pv-empty-title" }, Text("Nothing at the playhead")),
-                Span(new Props() { ClassName = "pv-empty-copy" },
-                    Text("Drop a clip on the timeline or add a title to start."))));
+            layers.Add(Device.Mobile
+                ? Div(new Props() { ClassName = "pv-empty is-mobile" },
+                    H("i", new Props() { ClassName = "fa-solid fa-clapperboard" }),
+                    Span(new Props() { ClassName = "pv-empty-title" }, Text("Start your story")),
+                    Span(new Props() { ClassName = "pv-empty-copy" },
+                        Text("Add a clip or a title to see it here.")),
+                    Div(new Props() { ClassName = "pv-empty-actions" },
+                        Button(new()
+                        {
+                            ClassName = "btn is-accent is-small",
+                            OnClick = () => OpenLibrary(store, "media")
+                        },
+                            H("i", new Props() { ClassName = "fa-solid fa-plus" }),
+                            Text("Add media")),
+                        Button(new()
+                        {
+                            ClassName = "btn is-small",
+                            OnClick = () => OpenLibrary(store, "text")
+                        },
+                            H("i", new Props() { ClassName = "fa-solid fa-font" }),
+                            Text("Title"))))
+                : Div(new Props() { ClassName = "pv-empty" },
+                    H("i", new Props() { ClassName = "fa-solid fa-clapperboard" }),
+                    Span(new Props() { ClassName = "pv-empty-title" }, Text("Nothing at the playhead")),
+                    Span(new Props() { ClassName = "pv-empty-copy" },
+                        Text("Drop a clip on the timeline or add a title to start."))));
         }
 
         return [.. layers];
+    }
+
+    private static void OpenLibrary(EditorStore store, string tab)
+    {
+        store.Ui.MobilePage = "media";
+        store.Ui.ActiveTab = tab;
+        store.Notify();
     }
 
     private static bool IsVisible(Clip clip, double playhead) =>

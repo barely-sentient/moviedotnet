@@ -72,6 +72,9 @@ first-run flow.
   minimise, maximise/restore and close buttons sit at the right. Rounded desktop
   corners square off automatically when maximized. The Android host keeps the
   system frame, and the mobile bar omits these controls.
+- **Context menus** — right-click on desktop or long-press on Android for Cut,
+  Copy, Paste, Duplicate, Split and Delete on clips, media placement actions and
+  per-track mute/hide/lock/clear commands.
 - **Projects** — save/open JSON projects (`*.mdproj`) in Documents/MovieDotNet.
 
 ## Requirements
@@ -115,6 +118,8 @@ Useful development switches:
 | `MOVIEDOTNET_IMPORT_FILE=<path>` | Import a media file at start-up (diagnostic/test helper). |
 | `MOVIEDOTNET_AUTOPLAY=1` | Start playing after the demo loads. |
 | `MOVIEDOTNET_MOBILE=1` | Force the phone shell on the desktop host. |
+| `MOVIEDOTNET_MOBILE_PAGE=preview\|media\|inspector` | Open a phone page at start-up (for screenshots and smoke tests). |
+| `MOVIEDOTNET_MOBILE_TAB=media\|text\|audio\|looks\|settings` | Select a phone library tab at start-up. |
 | `MOVIEDOTNET_UITEST=1\|clip\|text\|textpanel\|audio\|export\|browser\|transitions\|effects\|animations\|record\|settings` | Select a clip / open a rail panel or dialog for screenshot smoke tests. |
 | `MOVIEDOTNET_RENDER=<path>` | Render the demo (or an opened project) through the normal export command after loading. |
 | `MOVIEDOTNET_RECORD_MIC=<seconds>` | Record the default microphone for N seconds and ingest it. |
@@ -131,9 +136,12 @@ dotnet build -f net10.0-android
 ```
 
 The signed APK lands in `bin/Debug/net10.0-android/`. The phone shell shows one
-page at a time — **Edit** (preview above the timeline), **Media** and **Look** —
-with a bottom navigation bar. The preview canvas is sized in viewport units, the
-timeline uses compact track rows and the inspector collapses to a single column.
+page at a time — **Edit** (preview and timeline), **Media** (library tabs for
+media, text, audio, looks and setup) and **Adjust** (inspector) — with a bottom
+navigation bar. The preview canvas is sized in viewport units, the timeline uses
+touch-sized rows and a labelled toolbar, and the inspector collapses to a single
+column. The **⋯** button and **+ Track** open bottom sheets for project actions
+and new tracks.
 
 Mobile note: FFmpeg and ffprobe are desktop executables, so importing, analysing,
 recording and rendering stay desktop features. Android can open projects, play
@@ -223,7 +231,7 @@ named presets resolved by `Motion.For(clip, clipTime)` in the preview and by
 
 ## Building against a local framework checkout
 
-The editor references **`Donkeh.Windowing` 1.0.31** from NuGet. The framework
+The editor references **`Donkeh.Windowing` 1.0.36** from NuGet. The framework
 changes it relies on are documented in
 [`docs/framework-changes.md`](docs/framework-changes.md).
 

@@ -22,7 +22,9 @@ public sealed class Inspector : Component
             Div(new() { ClassName = "inspector-head" },
                 Div(new() { ClassName = "inspector-title" },
                     H("i", new Props { ClassName = clip is null ? "fa-solid fa-diagram-project" : IconFor(clip) }),
-                    Span(new(), Text(clip is null ? "Inspector" : ClipKindName(clip))))),
+                    Span(new(), Text(clip is null
+                        ? Device.Mobile ? "Adjust" : "Inspector"
+                        : ClipKindName(clip))))),
             Div(new() { ClassName = "inspector-body scroll" },
                 clip is null
                     ? Empty(store)
@@ -59,6 +61,30 @@ public sealed class Inspector : Component
                     Span(new() { ClassName = "empty-title" }, Text("Make it yours")),
                     Span(new() { ClassName = "empty-copy" },
                         Text("Select a clip to shape its frame, sound and motion. Everything updates live.")))),
+            Show(Device.Mobile, Div(new() { ClassName = "inspector-empty-actions" },
+                Button(new()
+                {
+                    ClassName = "btn is-accent",
+                    OnClick = () =>
+                    {
+                        store.Ui.MobilePage = "media";
+                        store.Ui.ActiveTab = "media";
+                        store.Notify();
+                    }
+                },
+                    H("i", new Props { ClassName = "fa-solid fa-plus" }),
+                    Text("Add media")),
+                Button(new()
+                {
+                    ClassName = "btn",
+                    OnClick = () =>
+                    {
+                        store.Ui.MobilePage = "preview";
+                        store.Notify();
+                    }
+                },
+                    H("i", new Props { ClassName = "fa-solid fa-tv" }),
+                    Text("Timeline")))),
             Div(new() { ClassName = "stat-grid" },
                 Stat("Clips", clips.ToString()),
                 Stat("Tracks", document.Tracks.Count.ToString()),
@@ -101,7 +127,11 @@ public sealed class Inspector : Component
                 }));
 
         return F(
-            Div(new() { ClassName = "clip-hero" },
+            Div(new()
+            {
+                ClassName = "clip-hero",
+                OnContextMenu = e => ContextMenus.ShowClip(store, clip, e)
+            },
                 Div(new() { ClassName = "clip-hero-thumb" },
                     Show(asset?.Poster is not null,
                         Img(new() { ClassName = "clip-hero-image", Src = asset?.Poster, Alt = clip.Name })),

@@ -151,3 +151,72 @@
     max-width: 380px;
     white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------- mobile */
+
+.is-mobile .browser-quick {
+    grid-template-columns: 1fr 1fr 1fr;
+    height: 126px;
+    padding: 0 0 6px;
+    gap: 6px;
+}
+
+.is-mobile .quick-pill {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 11px;
+}
+
+.is-mobile .browser-path {
+    margin: 10px 0;
+    padding: 4px 6px 4px 10px;
+}
+
+.is-mobile .browser-list {
+    margin: 0;
+    min-height: 160px;
+    padding: 4px 0;
+}
+
+.is-mobile .browser-row {
+    gap: 12px;
+    min-height: 46px;
+    padding: 8px 8px;
+}
+
+.is-mobile .browser-row-icon {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.is-mobile .browser-row-name {
+    font-size: 12.5px;
+}
+
+.is-mobile .browser-row-meta {
+    font-size: 10px;
+}
+
+.is-mobile .browser-selection {
+    flex: 1 1 100%;
+    max-width: 100%;
+    font-size: 11px;
+}
+
+.is-mobile .browser-modal .modal-foot {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: 8px;
+}
+
+.is-mobile .browser-modal .modal-foot .spacer {
+    display: none;
+}
+
+.is-mobile .browser-modal .modal-foot .btn {
+    flex: 1;
+    min-height: 42px;
+}

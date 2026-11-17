@@ -62,7 +62,7 @@
     -->
     <TargetFrameworks Condition="'$(DonkehAndroid)' == 'true'">net10.0;net10.0-android</TargetFrameworks>
     <TargetFramework Condition="'$(DonkehAndroid)' != 'true'">net10.0</TargetFramework>
-    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.32</DonkehVersion>
+    <DonkehVersion Condition="'$(DonkehVersion)' == ''">1.0.37</DonkehVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseLocalDonkeh)' != 'true'">
@@ -126,5 +126,8 @@
 
   <ItemGroup>
     <PackageReference Include="Donkeh.Windowing.Android" Version="$(DonkehVersion)" Condition="'$(UseLocalDonkeh)' != 'true' and '$(TargetFramework)' == 'net10.0-android'" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="src/Components/ContextMenu/ContextMenu.css" />
   </ItemGroup>
 </Project>

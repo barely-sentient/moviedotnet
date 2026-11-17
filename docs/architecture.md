@@ -4,7 +4,7 @@ MovieDotNet is a single .NET app built on the Donkeh UI framework. The app owns
 the editor state and all media orchestration; Donkeh owns layout, painting and
 input dispatch.
 
-The app references **`Donkeh.Windowing` 1.0.31** from NuGet. It targets `net10.0`
+The app references **`Donkeh.Windowing` 1.0.36** from NuGet. It targets `net10.0`
 for desktop, adding `net10.0-android` when `DonkehAndroid=true`. A local
 framework checkout remains optional through `-p:UseLocalDonkeh=true`.
 
@@ -110,6 +110,6 @@ See [Window and mobile](window-and-mobile.md).
 The app exposes environment switches for headless smoke tests:
 `MOVIEDOTNET_DEMO`, `MOVIEDOTNET_PROJECT`, `MOVIEDOTNET_IMPORT_FILE`,
 `MOVIEDOTNET_UITEST`, `MOVIEDOTNET_MOBILE`, `MOVIEDOTNET_MOBILE_PAGE`,
-`MOVIEDOTNET_RENDER`, `MOVIEDOTNET_RECORD_MIC`, `MOVIEDOTNET_RECORD_SCREEN` and
-`MOVIEDOTNET_RECORD_WINDOW`. `--screenshot <path>` renders 120 frames and writes
-a BMP before exiting.
+`MOVIEDOTNET_MOBILE_TAB`, `MOVIEDOTNET_RENDER`, `MOVIEDOTNET_RECORD_MIC`,
+`MOVIEDOTNET_RECORD_SCREEN` and `MOVIEDOTNET_RECORD_WINDOW`.
+`--screenshot <path>` renders 120 frames and writes a BMP before exiting.

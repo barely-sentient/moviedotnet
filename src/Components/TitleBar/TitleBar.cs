@@ -119,8 +119,9 @@ public sealed class TitleBar : Component
                 C<WindowControls>()));
     }
 
-    private static Node MobileBar(EditorStore store) =>
-        Div(new() { ClassName = "app-titlebar is-mobile" },
+    private static Node MobileBar(EditorStore store)
+    {
+        return Div(new() { ClassName = "app-titlebar is-mobile" },
             Div(new() { ClassName = "brand-mark" },
                 H("i", new Props { ClassName = "fa-solid fa-clapperboard" })),
             Input(new()
@@ -134,16 +135,29 @@ public sealed class TitleBar : Component
                     store.Notify();
                 }
             }),
-            Div(new() { ClassName = "spacer" }),
-            C<IconButton, IconButtonProps>(new IconButtonProps
-            {
-                Icon = "fa-solid fa-floppy-disk",
-                Tooltip = "Save project",
-                OnClick = () => EditorCommands.SaveProject(store)
-            }),
+            Div(new() { ClassName = "mobile-menu-wrap" },
+                Button(new()
+                {
+                    ClassName = store.Ui.MobileSheet == "project"
+                        ? "btn is-icon mobile-more is-open"
+                        : "btn is-icon mobile-more",
+                    Title = "Project menu",
+                    Attributes = new Dictionary<string, string>
+                    {
+                        ["aria-label"] = "Project menu",
+                        ["aria-expanded"] = store.Ui.MobileSheet == "project" ? "true" : "false"
+                    },
+                    OnClick = () =>
+                    {
+                        store.Ui.MobileSheet = store.Ui.MobileSheet == "project" ? "" : "project";
+                        store.Notify();
+                    }
+                },
+                    H("i", new Props { ClassName = "fa-solid fa-ellipsis" }))),
             Button(new()
             {
                 ClassName = "btn is-accent render-button mobile-render",
+                Title = "Render the project to a video",
                 OnClick = () =>
                 {
                     store.Ui.ShowExport = true;
@@ -152,6 +166,7 @@ public sealed class TitleBar : Component
             },
                 H("i", new Props { ClassName = "fa-solid fa-film" }),
                 Text("Render")));
+    }
 
     private static string FormatDuration(double seconds)
     {

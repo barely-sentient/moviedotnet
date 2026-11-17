@@ -94,8 +94,10 @@ FFmpeg and ffprobe are desktop executables. On Android:
 
 - Import, recording, analysis and render are unavailable.
 - Projects can be opened, played and edited.
-- The title bar and inspector use the phone shell; there are no desktop window
-  controls.
+- The **Edit / Media / Adjust** phone shell replaces the desktop docks; there are
+  no desktop window controls.
+- On a phone without FFmpeg the media bin offers **Open project** and **Add a
+  title**, and the Export dialog explains that rendering needs the desktop build.
 - If Android reports an invalid package, download the APK from the latest
   release again. CI verifies the APK signature before publishing it.
 
@@ -108,6 +110,8 @@ FFmpeg and ffprobe are desktop executables. On Android:
 | `MOVIEDOTNET_IMPORT_FILE=<path>` | Import one file at start-up. |
 | `MOVIEDOTNET_UITEST=...` | Open a panel or select a clip for smoke tests. |
 | `MOVIEDOTNET_MOBILE=1` | Force the phone shell on the desktop host. |
+| `MOVIEDOTNET_MOBILE_PAGE=preview\|media\|inspector` | Open a phone page at start-up. |
+| `MOVIEDOTNET_MOBILE_TAB=media\|text\|audio\|looks\|settings` | Select a phone library tab at start-up. |
 | `MOVIEDOTNET_RENDER=<path>` | Render after loading. |
 | `MOVIEDOTNET_RECORD_MIC=<seconds>` | Record the default microphone. |
 | `MOVIEDOTNET_RECORD_SCREEN=<seconds>` | Record the desktop. |
